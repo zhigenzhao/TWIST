@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: BSD-3-Clause
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
 #
@@ -29,6 +29,7 @@
 # Copyright (c) 2021 ETH Zurich, Nikita Rudin
 
 import os
+from types import ModuleType
 
 from legged_gym.envs import *
 from legged_gym.gym_utils import get_args, task_registry
@@ -37,23 +38,41 @@ import faulthandler
 from tqdm import tqdm
 from termcolor import cprint
 
+# Patch sys.modules to fake missing modules from numpy 2.x
+import numpy as np
+import sys
+
+
+class FakeModule(ModuleType):
+    def __init__(self, name, real=None):
+        super().__init__(name)
+        if real:
+            self.__dict__.update(real.__dict__)
+
+
+# Patch potentially missing modules
+sys.modules["numpy._core"] = FakeModule("numpy._core", np.core if hasattr(np, "core") else np)
+sys.modules["numpy._core.multiarray"] = FakeModule("numpy._core.multiarray", getattr(np.core, "multiarray", None))
+
+
 def get_load_path(root, load_run=-1, checkpoint=-1, model_name_include="jit"):
-    if checkpoint==-1:
+    if checkpoint == -1:
         models = [file for file in os.listdir(root) if model_name_include in file]
-        models.sort(key=lambda m: '{0:0>15}'.format(m))
+        models.sort(key=lambda m: "{0:0>15}".format(m))
         model = models[-1]
         checkpoint = model.split("_")[-1].split(".")[0]
     return model, checkpoint
 
+
 def set_play_cfg(env_cfg):
-    env_cfg.env.num_envs = 2#2 if not args.num_envs else args.num_envs
+    env_cfg.env.num_envs = 2  # 2 if not args.num_envs else args.num_envs
     env_cfg.env.episode_length_s = 60
     # env_cfg.commands.resampling_time = 60
     env_cfg.terrain.num_rows = 5
     env_cfg.terrain.num_cols = 5
     env_cfg.terrain.curriculum = False
     env_cfg.terrain.max_difficulty = True
-    
+
     env_cfg.noise.add_noise = False
     env_cfg.domain_rand.randomize_friction = True
     env_cfg.domain_rand.push_robots = False
@@ -62,7 +81,7 @@ def set_play_cfg(env_cfg):
     env_cfg.domain_rand.randomize_base_mass = False
     env_cfg.domain_rand.randomize_base_com = False
     env_cfg.domain_rand.action_delay = False
-    
+
     if hasattr(env_cfg, "motion"):
         env_cfg.motion.motion_curriculum = False
 
@@ -70,6 +89,7 @@ def set_play_cfg(env_cfg):
 def play(args):
     faulthandler.enable()
     log_pth = "../../logs/{}/".format(args.proj_name) + args.exptid
+    print(f"Loading from: {log_pth}")
 
     env_cfg, train_cfg = task_registry.get_cfgs(name=args.task)
 
@@ -77,10 +97,10 @@ def play(args):
 
     env_cfg.env.record_video = args.record_video
     env_cfg.env.rand_reset = False
-    
+
     if_normalize = env_cfg.env.normalize_obs
     cprint(f"if_normalize: {if_normalize}", "green")
-    
+
     if env_cfg.env.record_video:
         env_cfg.env.episode_length_s = 10
 
@@ -89,7 +109,9 @@ def play(args):
 
     # load policy
     train_cfg.runner.resume = True
-    ppo_runner, train_cfg, log_pth = task_registry.make_alg_runner(log_root = log_pth, env=env, name=args.task, args=args, train_cfg=train_cfg, return_log_dir=True)
+    ppo_runner, train_cfg, log_pth = task_registry.make_alg_runner(
+        log_root=log_pth, env=env, name=args.task, args=args, train_cfg=train_cfg, return_log_dir=True
+    )
 
     if args.use_jit:
         path = os.path.join(log_pth, "traced")
@@ -111,21 +133,23 @@ def play(args):
     if args.record_video:
         mp4_writers = []
         import imageio
+
         env.enable_viewer_sync = True
         # env.enable_viewer_sync = False
         for i in range(env.num_envs):
-            video_name = args.proj_name + "-" + args.exptid +".mp4"
+            video_name = args.proj_name + "-" + args.exptid + ".mp4"
             run_name = log_pth.split("/")[-1]
             path = f"../../logs/videos_retarget/{run_name}"
             if not os.path.exists(path):
                 os.makedirs(path)
             video_name = os.path.join(path, video_name)
-            mp4_writer = imageio.get_writer(video_name, fps=int(1/env.dt))
+            mp4_writer = imageio.get_writer(video_name, fps=int(1 / env.dt))
             cprint(f"Recording video to {video_name}", "green")
             mp4_writers.append(mp4_writer)
 
     if args.record_log:
         import json
+
         run_name = log_pth.split("/")[-1]
         logs_dict = []
         dict_name = args.proj_name + "-" + args.exptid + ".json"
@@ -133,13 +157,12 @@ def play(args):
         if not os.path.exists(path):
             os.makedirs(path)
         dict_name = os.path.join(path, dict_name)
-        
-    
+
     if not (args.record_video or args.record_log):
-        traj_length = 100*int(env.max_episode_length)
+        traj_length = 100 * int(env.max_episode_length)
     else:
         traj_length = 2 * int(env.max_episode_length)
-        
+
     env_id = env.lookat_id
 
     for i in tqdm(range(traj_length)):
@@ -153,28 +176,28 @@ def play(args):
             actions = policy(normalized_obs, hist_encoding=True)
         obs, _, rews, dones, infos = env.step(actions.detach())
         if args.record_video:
-            imgs = env.render_record(mode='rgb_array')
+            imgs = env.render_record(mode="rgb_array")
             if imgs is not None:
                 for i in range(env.num_envs):
                     mp4_writers[i].append_data(imgs[i])
-                    
+
         if args.record_log:
             log_dict = env.get_episode_log()
             logs_dict.append(log_dict)
-        
+
         # Interaction
         if env.button_pressed:
             print(f"env_id: {env.lookat_id:<{5}}")
-    
+
     if args.record_video:
         for mp4_writer in mp4_writers:
             mp4_writer.close()
-            
-    if args.record_log:
-        with open(dict_name, 'w') as f:
-            json.dump(logs_dict, f)
-    
 
-if __name__ == '__main__':
+    if args.record_log:
+        with open(dict_name, "w") as f:
+            json.dump(logs_dict, f)
+
+
+if __name__ == "__main__":
     args = get_args()
     play(args)
