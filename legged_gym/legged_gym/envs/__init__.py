@@ -40,6 +40,10 @@ from .g1.g1_mimic_distill import G1MimicDistill
 from .g1.g1_mimic_distill_config import G1MimicPrivCfg, G1MimicPrivCfgPPO
 from .g1.g1_mimic_distill_config import G1MimicStuRLCfg, G1MimicStuRLCfgDAgger
 
+from .t1.t1_mimic_distill import T1MimicDistill
+from .t1.t1_mimic_distill_config import T1MimicPrivCfg, T1MimicPrivCfgPPO
+from .t1.t1_mimic_distill_config import T1MimicStuRLCfg, T1MimicStuRLCfgDAgger
+
 from legged_gym.gym_utils.task_registry import task_registry
 
 # ======================= environment registration =======================
@@ -47,4 +51,8 @@ from legged_gym.gym_utils.task_registry import task_registry
 task_registry.register("g1_priv_mimic", G1MimicDistill, G1MimicPrivCfg(), G1MimicPrivCfgPPO())
 
 task_registry.register("g1_stu_rl", G1MimicDistill, G1MimicStuRLCfg(), G1MimicStuRLCfgDAgger())
+
+task_registry.register("t1_priv_mimic", T1MimicDistill, T1MimicPrivCfg(), T1MimicPrivCfgPPO())
+
+task_registry.register("t1_stu_rl", T1MimicDistill, T1MimicStuRLCfg(), T1MimicStuRLCfgDAgger())
 

@@ -62,7 +62,8 @@ class MotionLib:
                     root_rot = torch.tensor(motion_data["root_rot"], dtype=torch.float, device=self._device)
                     dof_pos = torch.tensor(motion_data["dof_pos"], dtype=torch.float, device=self._device)
                     local_body_pos = torch.tensor(motion_data["local_body_pos"], dtype=torch.float, device=self._device)
-                    if i == 0:
+                    # Set body link list from first successfully loaded file
+                    if len(self._body_link_list) == 0 and motion_data["link_body_list"] is not None:
                         self._body_link_list = motion_data["link_body_list"]
                     
                     num_frames = root_pos.shape[0]
