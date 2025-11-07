@@ -41,8 +41,6 @@ rsync -avzh --progress \
     --exclude='logs/' \
     --exclude='.venv/' \
     --exclude='venv/' \
-    --exclude='.env' \
-    --exclude='.env.*' \
     --exclude='*.log' \
     --exclude='wandb/' \
     --exclude='wandb_download/' \
@@ -62,4 +60,10 @@ echo ""
 # Step 2: Submit SLURM job
 echo -e "${YELLOW}[2/2] Submitting SLURM job...${NC}"
 
-echo -e "${GREEN}=== Job submission complete! ===${NC}"
+# Parse command line arguments for the job
+TASK_ARGS="${@}"
+
+# Submit the job via SSH
+echo "Submitting job with arguments: $TASK_ARGS"
+OUTPUT=$(ssh "$REMOTE_FULL" "cd ${REMOTE_DIR}/cluster && sh submit_job.sh $REMOTE_DIR $TASK_ARGS")
+echo "$OUTPUT"

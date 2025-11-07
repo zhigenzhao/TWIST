@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
 
-echo "(run_singularity.py): Called on compute node from current directory $1 with container profile $2 and arguments ${@:3}"
-
+echo "====================================="
+echo "TWIST Singularity Execution Script"
+echo "====================================="
+echo "Called from directory: $1"
+echo "Arguments: ${@:2}"
+echo ""
 
 setup_directories() {
-    # Check and create directories
+    # Check and create directories for Isaac Sim cache
+    echo "Setting up cache directories..."
     for dir in \
         "${CLUSTER_ISAAC_SIM_CACHE_DIR}/cache/kit" \
         "${CLUSTER_ISAAC_SIM_CACHE_DIR}/cache/ov" \
@@ -16,42 +21,58 @@ setup_directories() {
         "${CLUSTER_ISAAC_SIM_CACHE_DIR}/documents"; do
         if [ ! -d "$dir" ]; then
             mkdir -p "$dir"
-            echo "Created directory: $dir"
+            echo "  Created directory: $dir"
         fi
     done
+    echo "Cache directories ready."
+    echo ""
+}
+
+check_singularity_image_exists() {
+    image_name="twist_gym"
+    if ! ssh "$CLUSTER_LOGIN" "[ -f $CLUSTER_SIF_PATH/$image_name.tar ]"; then
+        echo "[Error] The '$image_name' image does not exist on the remote host $CLUSTER_LOGIN!" >&2;
+        exit 1
+    fi
 }
 
 #==
 # Main
 #==
+IMAGE_NAME="twist_gym"
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+source "$SCRIPT_DIR/.env.cluster"
+check_singularity_image_exists
 
-# load variables to set the Isaac Lab path on the cluster
-source $SCRIPT_DIR/.env.cluster
+# Setup directories
 setup_directories
 cp -r $CLUSTER_ISAAC_SIM_CACHE_DIR $TMPDIR
+tar -xf $CLUSTER_SIF_PATH/$IMAGE_NAME.tar  -C $TMPDIR
+echo "Singularity image extracted to $TMPDIR/$IMAGE_NAME"
 
-# copy the temporary isaaclab directory with the latest changes to the compute node
-cp -r $1 $TMPDIR
-dir_name=$(basename "$1")
+# Get args
+PROJECT_DIR="$1"
+EXTRA_ARGS="${@:2}"
 
-# copy container to the compute node
-tar -xf $CLUSTER_SIF_PATH/$2.tar  -C $TMPDIR
+echo "Configuration:"
+echo "  Project directory: $PROJECT_DIR"
+echo "  SIF directory: $CLUSTER_SIF_DIR"
+echo "  Dataset directory: $CLUSTER_DATASET_DIR"
+echo "  Python executable: $CLUSTER_PYTHON_EXECUTABLE"
+echo "  Extra arguments: $EXTRA_ARGS"
+echo ""
 
-# execute command in singularity container
+# Check if Isaac Gym is available
+echo "Starting training in singularity container..."
+
+# Execute the training script in the singularity container
 singularity exec \
-    -B $TMPDIR/docker-isaac-sim/cache/kit:${DOCKER_ISAACSIM_ROOT_PATH}/kit/cache:rw \
-    -B $TMPDIR/docker-isaac-sim/cache/ov:${DOCKER_USER_HOME}/.cache/ov:rw \
-    -B $TMPDIR/docker-isaac-sim/cache/pip:${DOCKER_USER_HOME}/.cache/pip:rw \
-    -B $TMPDIR/docker-isaac-sim/cache/glcache:${DOCKER_USER_HOME}/.cache/nvidia/GLCache:rw \
-    -B $TMPDIR/docker-isaac-sim/cache/computecache:${DOCKER_USER_HOME}/.nv/ComputeCache:rw \
-    -B $TMPDIR/docker-isaac-sim/logs:${DOCKER_USER_HOME}/.nvidia-omniverse/logs:rw \
-    -B $TMPDIR/docker-isaac-sim/data:${DOCKER_USER_HOME}/.local/share/ov/data:rw \
-    -B $TMPDIR/docker-isaac-sim/documents:${DOCKER_USER_HOME}/Documents:rw \
-    -B $TMPDIR/$dir_name:/workspace/isaaclab:rw \
-    -B $CLUSTER_ISAACLAB_DIR/logs:/workspace/isaaclab/logs:rw \
-    --nv --writable --containall $TMPDIR/$2.sif \
-    bash -c "export ISAACLAB_PATH=/workspace/isaaclab && cd /workspace/isaaclab && /isaac-sim/python.sh ${CLUSTER_PYTHON_EXECUTABLE} ${@:3}"
+    --nv \
+    --containall \
+    -B $PROJECT_DIR:/workspace/TWIST:rw \
+    -B $CLUSTER_DATASET_DIR:/workspace/TWIST_Dataset:ro \
+    $TMPDIR/$IMAGE_NAME \
+    bash -c "cd /workspace/TWIST && sh install.sh && python $CLUSTER_PYTHON_EXECUTABLE $EXTRA_ARGS"
 
-# copy resulting cache files back to host
-rsync -azPv $TMPDIR/docker-isaac-sim $CLUSTER_ISAAC_SIM_CACHE_DIR/..
+
+
