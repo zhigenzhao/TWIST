@@ -243,17 +243,25 @@ class OnPolicyRunner:
                 self.log(locals())
             if it < 2500:
                 if it % self.save_interval == 0:
-                    self.save(os.path.join(self.log_dir, 'model_{}.pt'.format(it)))
+                    checkpoint_path = os.path.join(self.log_dir, 'model_{}.pt'.format(it))
+                    self.save(checkpoint_path)
+                    wandb.save(checkpoint_path, policy="now")
             elif it < 5000:
                 if it % (2*self.save_interval) == 0:
-                    self.save(os.path.join(self.log_dir, 'model_{}.pt'.format(it)))
+                    checkpoint_path = os.path.join(self.log_dir, 'model_{}.pt'.format(it))
+                    self.save(checkpoint_path)
+                    wandb.save(checkpoint_path, policy="now")
             else:
                 if it % (5*self.save_interval) == 0:
-                    self.save(os.path.join(self.log_dir, 'model_{}.pt'.format(it)))
+                    checkpoint_path = os.path.join(self.log_dir, 'model_{}.pt'.format(it))
+                    self.save(checkpoint_path)
+                    wandb.save(checkpoint_path, policy="now")
             ep_infos.clear()
-        
+
         # self.current_learning_iteration += num_learning_iterations
-        self.save(os.path.join(self.log_dir, 'model_{}.pt'.format(self.current_learning_iteration)))
+        final_checkpoint_path = os.path.join(self.log_dir, 'model_{}.pt'.format(self.current_learning_iteration))
+        self.save(final_checkpoint_path)
+        wandb.save(final_checkpoint_path, policy="now")
     
     def _need_normalizer_update(self, iterations, update_iterations):
         return iterations < update_iterations

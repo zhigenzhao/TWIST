@@ -1,0 +1,104 @@
+FROM nvidia/cuda:12.4.0-devel-ubuntu22.04
+
+# Prevent interactive prompts during installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    wget \
+    git \
+    build-essential \
+    libssl-dev \
+    zlib1g-dev \
+    libbz2-dev \
+    libreadline-dev \
+    libsqlite3-dev \
+    curl \
+    libncursesw5-dev \
+    xz-utils \
+    tk-dev \
+    libxml2-dev \
+    libxmlsec1-dev \
+    libffi-dev \
+    liblzma-dev \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    ninja-build \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Miniforge (conda-forge based, no TOS issues)
+RUN wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh -O /tmp/miniforge.sh && \
+    bash /tmp/miniforge.sh -b -p /opt/conda && \
+    rm /tmp/miniforge.sh
+
+# Add conda to PATH
+ENV PATH="/opt/conda/bin:${PATH}"
+
+# Initialize conda
+RUN conda init bash
+
+# Create conda environment with Python 3.8
+RUN conda create -n twist python=3.8 -y && \
+    echo "conda activate twist" >> ~/.bashrc
+
+# Activate conda environment for subsequent RUN commands
+SHELL ["conda", "run", "-n", "twist", "/bin/bash", "-c"]
+
+# Upgrade pip in conda environment
+RUN pip install --upgrade pip setuptools wheel
+
+# Set working directory
+WORKDIR /workspace
+
+# Copy and install IsaacGym to permanent location
+COPY IsaacGym_Preview_4_Package.tar.gz /workspace/isaacgym.tar.gz
+RUN cd /workspace && \
+    tar -xf isaacgym.tar.gz && \
+    cd isaacgym/python && \
+    pip install -e . && \
+    rm /workspace/isaacgym.tar.gz
+
+# Clone TWIST repository to TWIST_Original
+RUN git clone https://github.com/zhigenzhao/TWIST.git /workspace/TWIST_Original || \
+    echo "TWIST repository clone failed - please update with correct URL"
+
+# Install rsl_rl from TWIST_Original
+RUN cd /workspace/TWIST_Original/rsl_rl && pip install -e .
+
+# Install main packages (excluding legged_gym, redis, pyttsx3)
+RUN pip install --no-cache-dir \
+    "numpy==1.23.0" \
+    pydelatin \
+    wandb \
+    tqdm \
+    opencv-python \
+    ipdb \
+    pyfqmr \
+    flask \
+    dill \
+    gdown \
+    hydra-core \
+    "imageio[ffmpeg]" \
+    mujoco \
+    mujoco-python-viewer \
+    isaacgym-stubs \
+    pytorch-kinematics \
+    rich \
+    termcolor
+
+# Install pose package
+RUN cd /workspace/TWIST_Original/pose && pip install -e .
+
+# Clean up pip caches only (keep apt lists and gcc internals)
+RUN pip cache purge && \
+    rm -rf /root/.cache \
+           ~/.cache/pip
+
+# Note: User will mount their own TWIST directory to /workspace/TWIST
+WORKDIR /workspace/TWIST
+
+# Set the default command to activate conda environment
+CMD ["/bin/bash", "-c", "source /opt/conda/etc/profile.d/conda.sh && conda activate twist && /bin/bash"]

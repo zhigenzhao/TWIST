@@ -29,9 +29,8 @@ setup_directories() {
 }
 
 check_singularity_image_exists() {
-    image_name="twist_gym"
-    if ! ssh "$CLUSTER_LOGIN" "[ -f $CLUSTER_SIF_PATH/$image_name.tar ]"; then
-        echo "[Error] The '$image_name' image does not exist on the remote host $CLUSTER_LOGIN!" >&2;
+    if ! ssh "$CLUSTER_LOGIN" "[ -f $CLUSTER_SIF_PATH/$IMAGE_NAME.tar ]"; then
+        echo "[Error] The '$IMAGE_NAME' image does not exist on the remote host $CLUSTER_LOGIN!" >&2;
         exit 1
     fi
 }
@@ -39,7 +38,7 @@ check_singularity_image_exists() {
 #==
 # Main
 #==
-IMAGE_NAME="twist_gym"
+IMAGE_NAME="twist"
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 source "$SCRIPT_DIR/.env.cluster"
 check_singularity_image_exists
@@ -47,7 +46,12 @@ check_singularity_image_exists
 # Setup directories
 setup_directories
 cp -r $CLUSTER_ISAAC_SIM_CACHE_DIR $TMPDIR
-tar -xf $CLUSTER_SIF_PATH/$IMAGE_NAME.tar  -C $TMPDIR
+
+# Remove any existing extracted image to ensure clean extraction
+rm -rf $TMPDIR/$IMAGE_NAME
+
+# Extract fresh image from tar
+tar -xf $CLUSTER_SIF_PATH/$IMAGE_NAME.tar -C $TMPDIR
 echo "Singularity image extracted to $TMPDIR/$IMAGE_NAME"
 
 # Get args
@@ -56,7 +60,7 @@ EXTRA_ARGS="${@:2}"
 
 echo "Configuration:"
 echo "  Project directory: $PROJECT_DIR"
-echo "  SIF directory: $CLUSTER_SIF_DIR"
+echo "  SIF directory: $CLUSTER_SIF_PATH"
 echo "  Dataset directory: $CLUSTER_DATASET_DIR"
 echo "  Python executable: $CLUSTER_PYTHON_EXECUTABLE"
 echo "  Extra arguments: $EXTRA_ARGS"
@@ -68,11 +72,31 @@ echo "Starting training in singularity container..."
 # Execute the training script in the singularity container
 singularity exec \
     --nv \
-    --containall \
+    --writable-tmpfs \
     -B $PROJECT_DIR:/workspace/TWIST:rw \
     -B $CLUSTER_DATASET_DIR:/workspace/TWIST_Dataset:ro \
+    -B $CLUSTER_GCC_TOOLCHAIN_DIR/bin/gcc:/usr/bin/gcc:ro \
+    -B $CLUSTER_GCC_TOOLCHAIN_DIR/bin/g++:/usr/bin/g++:ro \
+    -B $CLUSTER_GCC_TOOLCHAIN_DIR/lib/gcc:/usr/lib/gcc:ro \
+    -B $CLUSTER_GCC_TOOLCHAIN_DIR/include:/usr/include:ro \
+    -B $CLUSTER_GCC_TOOLCHAIN_DIR/lib64:/host-gcc-lib64:ro \
     $TMPDIR/$IMAGE_NAME \
-    bash -c "cd /workspace/TWIST && sh install.sh && python $CLUSTER_PYTHON_EXECUTABLE $EXTRA_ARGS"
+    bash -c "
+        eval \"\$(conda shell.bash hook)\"
+        conda activate twist
+        export LD_LIBRARY_PATH=/host-gcc-lib64:\$CONDA_PREFIX/lib:\$LD_LIBRARY_PATH
+        export LIBRARY_PATH=/host-gcc-lib64:\$LIBRARY_PATH
+        export CPATH=/usr/lib/gcc/x86_64-linux-gnu/11/include:\$CPATH
+        export CC=/usr/bin/gcc
+        export CXX=/usr/bin/g++
+        python --version
+        export PYTHONPATH=/workspace/isaacgym/python:/workspace/TWIST_Original/rsl_rl:/workspace/TWIST_Original/pose:/workspace/TWIST/legged_gym:\$PYTHONPATH
+        cd /workspace/TWIST
+        cd rsl_rl && pip install -e . && cd ..
+        cd legged_gym && pip install -e . --no-deps
+        cd ..
+        python $CLUSTER_PYTHON_EXECUTABLE $EXTRA_ARGS
+    "
 
 
 
