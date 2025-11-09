@@ -1,0 +1,67 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Cluster - Teacher",
+            "type": "node-terminal",
+            "request": "launch",
+            "command": "bash cluster/push_job.sh --task ${input:teacher_task} --proj_name ${input:teacher_task} --exptid ${input:exptid} --entity ${input:entity} --max_iterations ${input:max_iterations} --num_envs ${input:num_envs}",
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Cluster - Student",
+            "type": "node-terminal",
+            "request": "launch",
+            "command": "bash cluster/push_job.sh --task ${input:student_task} --proj_name ${input:student_task} --exptid ${input:exptid} --teacher_exptid ${input:exptid_teacher} --entity ${input:entity} --max_iterations ${input:max_iterations} --num_envs ${input:num_envs}",
+            "cwd": "${workspaceFolder}"
+        },
+    ],
+    "inputs": [
+        {
+            "id": "teacher_task",
+            "type": "pickString",
+            "description": "Task name",
+            "options": [
+                "t1_priv_mimic"
+            ],
+        },
+        {
+            "id": "student_task",
+            "type": "pickString",
+            "description": "Task name",
+            "options": [
+                "t1_stu_rl"
+            ],
+        },
+        {
+            "id": "exptid",
+            "type": "promptString",
+            "description": "Experiment ID",
+            "default": "TestRun"
+        },
+        {
+            "id": "exptid_teacher",
+            "type": "promptString",
+            "description": "Teacher Experiment ID",
+            "default": "TestRun"
+        },
+        {
+            "id": "max_iterations",
+            "type": "promptString",
+            "description": "Maximum number of training iterations",
+            "default": "30000"
+        },
+        {
+            "id": "num_envs",
+            "type": "promptString",
+            "description": "Number of environments to use",
+            "default": "4096"
+        },
+        {
+            "id": "entity",
+            "type": "promptString",
+            "description": "WandB entity name",
+            "default": "RoboRambler"
+        }
+    ]
+}

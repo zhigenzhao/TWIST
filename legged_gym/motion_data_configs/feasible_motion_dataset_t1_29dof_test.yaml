@@ -1,0 +1,8 @@
+root_path: /home/keseterg/Expansion1/Others/FeasibleMotion_AMASS_OMOMO/feasible_motion_dataset_t1_29dof/
+motions:
+  # - description: general movement
+  #   file: dancedb/Andria_Satisfied_v2_C3D.pkl
+  #   weight: 100.0
+  - description: general movement
+    file: eyes_japan/walk_03_sneak_hamada.pkl
+    weight: 100.0
