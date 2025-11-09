@@ -317,8 +317,8 @@ class T1MimicPrivCfg(HumanoidMimicCfg):
         ]  # 9 key bodies
         upper_key_bodies = ["left_hand_link", "right_hand_link", "AL5", "AR5", "H2"]
 
-        motion_file = f"{LEGGED_GYM_ROOT_DIR}/motion_data_configs/twist_dataset_simple.yaml"
-
+        # motion_file = f"{LEGGED_GYM_ROOT_DIR}/motion_data_configs/twist_dataset_simple.yaml"
+        motion_file = f"{LEGGED_GYM_ROOT_DIR}/motion_data_configs/feasible_motion_dataset_t1_29dof_pace.yaml"
         reset_consec_frames = 30
 
 

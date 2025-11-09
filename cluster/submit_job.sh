@@ -7,8 +7,7 @@ cat <<EOT > job.sh
 #SBATCH --mem=64GB
 #SBATCH --gres=gpu:H200:1
 #SBATCH --time=16:00:00
-#SBATCH --output=pace_logs/twist_train_%j.out
-#SBATCH --error=pace_logs/twist_train_%j.err
+#SBATCH --output=pace_logs/twist_train_%j.log
 
 source ~/.bashrc
 bash "run_singularity.sh" "$1" "${@:2}"

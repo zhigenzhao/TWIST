@@ -95,6 +95,7 @@ singularity exec \
         cd rsl_rl && pip install -e . && cd ..
         cd legged_gym && pip install -e . --no-deps
         cd ..
+        export WANB_API_KEY=$CLUSTER_WANDB_API_KEY
         python $CLUSTER_PYTHON_EXECUTABLE $EXTRA_ARGS
     "
 

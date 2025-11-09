@@ -90,6 +90,8 @@ def train(args):
     # wandb.save(LEGGED_GYM_ENVS_DIR + "/base/humanoid.py", policy="now")
     if robot_type == "g1":
         wandb.save(LEGGED_GYM_ENVS_DIR + "/g1/g1_mimic_distill_config.py", policy="now")
+    elif robot_type == "t1":
+        wandb.save(LEGGED_GYM_ENVS_DIR + "/t1/t1_mimic_distill_config.py", policy="now")
 
     env, _ = task_registry.make_env(name=args.task, args=args)
     ppo_runner, train_cfg = task_registry.make_alg_runner(log_root=log_pth, env=env, name=args.task, args=args)

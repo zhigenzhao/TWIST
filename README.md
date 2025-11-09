@@ -35,7 +35,6 @@ https://github.com/user-attachments/assets/4953b6de-5c84-4a4b-9391-75818903a654
 
 
 
-
 # Installation
 The training can be run on a single Nvidia RTX 4090 with 24G memory in 1~2 days.
 
