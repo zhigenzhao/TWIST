@@ -15,63 +15,156 @@ import yaml
 from termcolor import colored
 import mujoco as mj
 
-from sim2real.rl_policy.dec_loco.dec_loco import DecLocomotionPolicy
+from sim2real.rl_policy.base_policy import BasePolicy
 from booster_robotics_sdk_python import RobotMode
 
 np.set_printoptions(precision=3, suppress=True)
 
 
-class BoosterTeleop(DecLocomotionPolicy):
-    def __init__(self, config, model_path, rl_rate=50, policy_action_scale=1.0, headless=True):
-        pass
+def euler_from_quat(q):
+    w, x, y, z = q[:, 0], q[:, 1], q[:, 2], q[:, 3]
+    roll = np.arctan2(2 * (w * x + y * z), 1 - 2 * (x * x + y * y))
+    pitch = np.arcsin(np.clip(2 * (w * y - z * x), -1, 1))
+    yaw = np.arctan2(2 * (w * z + x * y), 1 - 2 * (y * y + z * z))
+    return roll, pitch, yaw
+
+
+def quat_rotate_inverse(q, v):
+    q = np.asarray(q)
+    v = np.asarray(v)
+
+    q_w = q[:, -1]  # w
+    q_vec = q[:, :3]  # x, y, z
+
+    a = v * (2.0 * q_w**2 - 1.0)[:, np.newaxis]
+    b = np.cross(q_vec, v) * (2.0 * q_w)[:, np.newaxis]
+    dot = np.sum(q_vec * v, axis=1, keepdims=True)
+    c = q_vec * (2.0 * dot)
+
+    return a - b + c
+
+
+class TwistPolicy(BasePolicy):
+    def __init__(self, config, model_path, headless=True):
+        rl_rate = config.get("RL_RATE", 50)
+        policy_action_scale = config.get("POLICY_ACTION_SCALE", 0.5)
+        super().__init__(config, model_path, rl_rate, policy_action_scale)
+
+        # Load robot model for reference motion
+        self.mj_model = mj.MjModel.from_xml_path(self.config.get("ROBOT_SCENE"))
+        self.mj_data = mj.MjData(self.mj_model)
+        mj.mj_resetDataKeyframe(self.mj_model, self.mj_data, 0)
+
+        # Observation and action dimensions
+        self.n_policy_dofs = self.config.get("TWIST_POLICY_DOFS")
+        self.n_mimic_obs = 8 + self.n_policy_dofs
+        self.n_proprio_obs = 3 + 2 + 3 * self.n_policy_dofs
+        self.dim_single_obs = self.n_mimic_obs + self.n_proprio_obs
+        self.dim_obs_history_len = self.config.get("TWIST_HIST_LEN")
+        self.dim_action = self.num_dofs
+        self.obs_history = np.zeros((self.dim_obs_history_len + 1, self.dim_single_obs))
+        self.last_action = np.zeros((1, self.n_policy_dofs))
+        self.obs_scales = {
+            "ang_vel": 0.0,
+            "dof_pos": 0.0,
+            "dof_vel": 0.01,
+        }
+        self.policy_dof_indices = list(range(self.num_dofs - self.n_policy_dofs, self.num_dofs))
+        self.ankle_indices = [19, 20, 25, 26]
+
+        # Load motion file for reference trajectories
+        self.motion_file_path = self.config.get("MOTION_FILE_PATH", None)
+        self.reference_motion_state = {
+            "root_pos": np.array([0.0, 0.0, 0.67]),
+            "root_quat": np.array([1, 0, 0, 0]),
+            "root_vel": np.zeros(3),
+            "root_ang_vel": np.zeros(3),
+            "dof_pos": self.default_dof_angles[self.policy_dof_indices],
+        }
+
+    def get_mimic_obs(self, reference_motion_state):
+        root_pos = reference_motion_state.get("root_pos", np.zeros(3))
+        root_rot = reference_motion_state.get("root_quat", np.array([1, 0, 0, 0]))
+        root_linvel = reference_motion_state.get("root_vel", np.zeros(3))
+        root_angvel = reference_motion_state.get("root_ang_vel", np.zeros(3))
+        dof_pos = reference_motion_state.get("dof_pos", np.zeros(self.n_policy_dofs))
+
+        # Convert to euler
+        roll, pitch, yaw = euler_from_quat(root_rot.reshape(1, 4))
+        roll, pitch, yaw = roll[0], pitch[0], yaw[0]
+
+        # Vel Transform
+        root_linvel = quat_rotate_inverse(root_rot.reshape(1, -1), root_linvel.reshape(1, -1))
+        root_angvel = quat_rotate_inverse(root_rot.reshape(1, -1), root_angvel.reshape(1, -1))
+
+        # Construct mimic observation: 1 + 3 + 3 + 1 + n_policy_dofs
+        mimic_obs = np.concatenate(
+            [
+                root_pos[2:3],  # 1
+                np.array([roll, pitch, yaw]),  # 3
+                root_linvel[0],  # 3
+                root_angvel[0, 2:3],  # 1
+                dof_pos,  # n_policy_dofs
+            ]
+        ).reshape(1, -1)
+
+        return mimic_obs
+
+    def get_proprio_obs(self, robot_state_data):
+        obs_dict = self.get_current_obs_buffer_dict(robot_state_data)
+
+        # Extract roll and pitch from IMU
+        roll, pitch, yaw = euler_from_quat(obs_dict["base_quat"])
+        imu_obs = np.concatenate([roll.reshape(1, 1), pitch.reshape(1, 1)], axis=1)
+        ang_vel_scaled = obs_dict["base_ang_vel"] * self.obs_scales["ang_vel"]
+
+        # qpos and qvel
+        dof_pos = obs_dict["dof_pos"][:, self.policy_dof_indices]
+        dof_pos = (dof_pos - self.default_dof_angles[self.policy_dof_indices]) * self.obs_scales["dof_pos"]
+        dof_vel = obs_dict["dof_vel"][:, self.policy_dof_indices] * self.obs_scales["dof_vel"]
+        dof_vel[:, self.ankle_indices] = 0.0
+
+        # Last action
+        last_action = self.last_action
+
+        # Prepare full proprioceptive observation: 3 + 2 + 3*n_policy_dofs
+        proprio_obs = np.concatenate(
+            [
+                ang_vel_scaled,  # 3
+                imu_obs,  # 2
+                dof_pos,  # n_policy_dofs
+                dof_vel,  # n_policy_dofs
+                last_action,  # n_policy_dofs
+            ],
+            axis=1,
+        )
+
+        return proprio_obs
+
+    def construct_current_obs(self, robot_state_data, reference_motion_state):
+        mimic_obs = self.get_mimic_obs(reference_motion_state)
+        proprio_obs = self.get_proprio_obs(robot_state_data)
+        current_obs = np.concatenate(
+            [
+                mimic_obs,
+                proprio_obs,
+            ],
+            axis=1,
+        )
+        return current_obs
+
+    def update_obs_history(self, current_obs):
+        # Shift history left and insert newest at back
+        self.obs_history = np.concatenate([self.obs_history[1:, :], current_obs], axis=0)
+        obs_history_flat = self.obs_history.flatten().reshape(1, -1)
+        return obs_history_flat
 
     def rl_inference(self, robot_state_data):
-        obs_buffer_dict = self.get_current_obs_buffer_dict(robot_state_data)
-        self.data.qpos[:] = obs_buffer_dict["dof_pos"]
-        mj.mj_forward(self.model, self.data)
-
-        obs_buffer_dict["base_ang_vel_scaled"] = obs_buffer_dict["base_ang_vel"] * 0.2
-        obs_buffer_dict["dof_pos_lower"] = obs_buffer_dict["dof_pos"][:, -12:]
-        obs_buffer_dict["dof_vel_scaled"] = obs_buffer_dict["dof_vel"][:, -12:] * 1.0
-        obs_buffer_dict["last_policy_action"] = self.last_policy_action.copy()
-
-        obs_list = [
-            "command_stsw_pose",
-            "command_countdown",
-            "command_foot_indicator",
-            "base_ang_vel_scaled",
-            "projected_gravity",
-            "dof_pos_lower",
-            "dof_vel_scaled",
-            "last_policy_action",
-        ]
-
-        # initialize and roll observation history if needed
-        for key in obs_list:
-            if key not in self.obs_history.keys():
-                self.obs_history[key] = np.zeros((self.obs_history_len, obs_buffer_dict[key].shape[1]))
-
-            # roll history: oldest observations removed, make space for newest
-            self.obs_history[key] = np.roll(self.obs_history[key], -1, axis=0)
-            self.obs_history[key][-1] = obs_buffer_dict[key]
-
-        # collect observations in specified layout
-        collected_obs = []
-        for key in obs_list:
-            collected_obs.append(self.obs_history[key].flatten())
-
-        # concatenate all observation types
-        collected_obs = np.concatenate(collected_obs, axis=0)
-
-        # run policy
-        policy_action = self.policy({"obs": collected_obs.reshape(1, -1).astype(np.float32)})
-
-        # WBC actions
-        self.last_policy_action = policy_action.copy()
+        current_obs = self.construct_current_obs(robot_state_data, self.reference_motion_state)
+        obs_full = self.update_obs_history(current_obs)
+        policy_action = self.policy({"observations": obs_full.astype(np.float32)})
+        self.last_action = policy_action.copy()
         scaled_policy_action = policy_action * self.policy_action_scale
-
-        if self.residual_upper_body_action:
-            scaled_policy_action[:, self.upper_dof_indices] += self.ref_upper_dof_pos - self.default_dof_angles[self.upper_dof_indices]
 
         return scaled_policy_action
 
@@ -79,45 +172,31 @@ class BoosterTeleop(DecLocomotionPolicy):
         """Handle keyboard button presses."""
         super().handle_keyboard_button(keycode)
 
-    def _print_control_status(self):
-        print(f"Current Stance: {self.command_foot_indicator}")
-
     def policy_action(self):
+        """Execute TWIST policy action and send commands to robot."""
         cmd_q = np.zeros(self.num_dofs)
         cmd_dq = np.zeros(self.num_dofs)
         cmd_tau = np.zeros(self.num_dofs)
         robot_state_data = self.state_processor.robot_state_data
-        if self.state_processor.robot_state_data is None:
+
+        if robot_state_data is None:
             return
 
-        if self.in_stepping:
-            now = time.time_ns()
-            t_passed = (now - self.start_stepping_time) / 1e9
-            # start: 0.0
-            # middle: t_passsed is half step time, reaches 1, the final value is 1
-            # end: 0.0
-            self.command_countdown[0][0] = 1.0 - np.abs((t_passed / (self.step_time / 2) - 1.0))
-            if t_passed > self.step_time:
-                self.command_countdown[0][0] = 0.0
-                self.in_stepping = False  # end stepping based on time
-
-        # Get policy action
         scaled_policy_action = self.rl_inference(robot_state_data)
+
         if self.get_ready_state:
-            # 1. Set to Default Joint Position: interpolate from current dof_pos to default angles
+            # 1. Set to Default Joint Position: interpolate from current to default
             q_target = self.get_init_target(robot_state_data)
             self.init_count = min(self.init_count, 500)
         elif not self.use_policy_action:
-            # 2. No Policy Action: set to zero
+            # 2. No Policy Action: hold current position
             q_target = robot_state_data[:, 7 : 7 + self.num_dofs]
         else:
-            # 3. Policy Action: apply policy action to current joint angles
-            true_act = scaled_policy_action + self.default_dof_angles[self.lower_dof_indices]
+            # 3. Apply policy action to all joints
             q_target = self.get_init_target(robot_state_data)
-            q_target[:, self.upper_dof_indices] = self.ref_upper_dof_pos
-            q_target[:, self.lower_dof_indices] = true_act
+            q_target[:, self.policy_dof_indices] = scaled_policy_action + self.default_dof_angles[self.policy_dof_indices].reshape(1, -1)
 
-        # Clip q target
+        # Clip q target to motor limits
         if self.motor_pos_lower_limit_list and self.motor_pos_upper_limit_list:
             q_target[0] = np.clip(q_target[0], self.motor_pos_lower_limit_list, self.motor_pos_upper_limit_list)
 
@@ -131,9 +210,9 @@ def signal_handler(sig, frame):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Robot")
-    parser.add_argument("--config", type=str, help="config file")
-    parser.add_argument("--model_path", type=str, help="path to the .pt")
+    parser = argparse.ArgumentParser(description="TWIST Policy")
+    parser.add_argument("--config", type=str, help="config file path")
+    parser.add_argument("--model_path", type=str, help="path to ONNX model")
     args = parser.parse_args()
 
     with open(args.config) as file:
@@ -143,6 +222,6 @@ if __name__ == "__main__":
     if not model_path:
         raise ValueError("model_path must be provided either via --model_path argument or in config file")
 
-    policy = BoosterTeleop(config=config, model_path=model_path, rl_rate=50, policy_action_scale=1.0)
+    policy = TwistPolicy(config=config, model_path=model_path)
     signal.signal(signal.SIGINT, signal_handler)
     policy.run()

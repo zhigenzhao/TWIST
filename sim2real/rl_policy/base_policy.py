@@ -52,10 +52,8 @@ class BasePolicy:
         self.num_upper_dofs = self.config.get("NUM_UPPER_BODY_JOINTS", 14)
 
         # Initialize motor limits (only position limits are used)
-        self.motor_pos_lower_limit_list = self.config.get(
-            "motor_pos_lower_limit_list", None)
-        self.motor_pos_upper_limit_list = self.config.get(
-            "motor_pos_upper_limit_list", None)
+        self.motor_pos_lower_limit_list = self.config.get("motor_pos_lower_limit_list", None)
+        self.motor_pos_upper_limit_list = self.config.get("motor_pos_upper_limit_list", None)
 
         # Setup dof names and indices
         self._setup_dof_mappings()
@@ -68,14 +66,12 @@ class BasePolicy:
 
         # These are used by derived classes, so keep them
         if self.upper_dof_names:
-            self.upper_dof_indices = [self.dof_names.index(
-                dof) for dof in self.upper_dof_names]
+            self.upper_dof_indices = [self.dof_names.index(dof) for dof in self.upper_dof_names]
         else:
             self.upper_dof_indices = []
 
         if self.lower_dof_names:
-            self.lower_dof_indices = [self.dof_names.index(
-                dof) for dof in self.lower_dof_names]
+            self.lower_dof_indices = [self.dof_names.index(dof) for dof in self.lower_dof_names]
         else:
             self.lower_dof_indices = []
 
@@ -85,18 +81,17 @@ class BasePolicy:
 
         if self.sdk_type == "unitree":
             from unitree_sdk2py.core.channel import ChannelFactoryInitialize
+
             if self.config.get("INTERFACE", None):
-                ChannelFactoryInitialize(
-                    self.config["DOMAIN_ID"], self.config["INTERFACE"])
+                ChannelFactoryInitialize(self.config["DOMAIN_ID"], self.config["INTERFACE"])
             else:
                 ChannelFactoryInitialize(self.config["DOMAIN_ID"])
         elif self.sdk_type == "booster":
             from booster_robotics_sdk_python import ChannelFactory
-            ChannelFactory.Instance().Init(
-                self.config["DOMAIN_ID"], self.config["NET"])
+
+            ChannelFactory.Instance().Init(self.config["DOMAIN_ID"], self.config["NET"])
         else:
-            raise NotImplementedError(
-                f"SDK type {self.sdk_type} is not supported yet")
+            raise NotImplementedError(f"SDK type {self.sdk_type} is not supported yet")
 
     def _init_obs_config(self):
         """Initialize observation configuration and buffers."""
@@ -107,11 +102,7 @@ class BasePolicy:
         self.history_length_dict = self.config["history_length_dict"]
 
         # Initialize observation buffers
-        self.obs_buf_dict = {
-            key: np.zeros(
-                (1, self.obs_dim_dict[key] * self.history_length_dict[key]))
-            for key in self.obs_dim_dict
-        }
+        self.obs_buf_dict = {key: np.zeros((1, self.obs_dim_dict[key] * self.history_length_dict[key])) for key in self.obs_dim_dict}
 
     def _init_communication_components(self):
         """Initialize state processor and command sender using the wrapper."""
@@ -157,6 +148,7 @@ class BasePolicy:
     def _init_rate_handler(self):
         """Initialize ROS handler if enabled."""
         from loguru import logger
+
         self.logger = logger
         self.rate = RateLimiter(self.config.get("rl_rate", 50))
 
@@ -181,17 +173,55 @@ class BasePolicy:
             self.last_key_states = {}
             self.wc_msg = None
             self.wc_key_map = {
-                1: "R1", 2: "L1", 3: "L1+R1", 4: "start", 8: "select",
+                1: "R1",
+                2: "L1",
+                3: "L1+R1",
+                4: "start",
+                8: "select",
                 # F1, F2 not used in sim2sim
-                10: "L1+select", 16: "R2", 32: "L2", 64: "F1", 128: "F2",
-                256: "A", 512: "B", 768: "A+B", 1024: "X", 1280: "A+X",
-                1536: "B+X", 2048: "Y", 2304: "A+Y", 2560: "B+Y", 3072: "X+Y",
-                4096: "up", 4097: "R1+up", 4352: "A+up", 4608: "B+up", 5120: "X+up",
-                6144: "Y+up", 4104: "select+up", 8192: "right", 8193: "R1+right", 8200: "select+right",
-                8448: "A+right", 8704: "B+right", 9216: "X+right", 10240: "Y+right", 16384: "down",
-                16385: "R1+down", 16392: "select+down", 16640: "A+down", 16896: "B+down", 17408: "X+down",
-                18432: "Y+down", 32768: "left", 32769: "R1+left", 32776: "select+left", 33024: "A+left",
-                33280: "B+left", 33792: "X+left", 34816: "Y+left",
+                10: "L1+select",
+                16: "R2",
+                32: "L2",
+                64: "F1",
+                128: "F2",
+                256: "A",
+                512: "B",
+                768: "A+B",
+                1024: "X",
+                1280: "A+X",
+                1536: "B+X",
+                2048: "Y",
+                2304: "A+Y",
+                2560: "B+Y",
+                3072: "X+Y",
+                4096: "up",
+                4097: "R1+up",
+                4352: "A+up",
+                4608: "B+up",
+                5120: "X+up",
+                6144: "Y+up",
+                4104: "select+up",
+                8192: "right",
+                8193: "R1+right",
+                8200: "select+right",
+                8448: "A+right",
+                8704: "B+right",
+                9216: "X+right",
+                10240: "Y+right",
+                16384: "down",
+                16385: "R1+down",
+                16392: "select+down",
+                16640: "A+down",
+                16896: "B+down",
+                17408: "X+down",
+                18432: "Y+down",
+                32768: "left",
+                32769: "R1+left",
+                32776: "select+left",
+                33024: "A+left",
+                33280: "B+left",
+                33792: "X+left",
+                34816: "Y+left",
             }
 
     def _init_keyboard_handler(self):
@@ -209,10 +239,8 @@ class BasePolicy:
     def setup_policy(self, model_path):
         """Setup ONNX policy model."""
         self.onnx_policy_session = onnxruntime.InferenceSession(model_path)
-        input_names = [
-            inp.name for inp in self.onnx_policy_session.get_inputs()]
-        output_names = [
-            out.name for out in self.onnx_policy_session.get_outputs()]
+        input_names = [inp.name for inp in self.onnx_policy_session.get_inputs()]
+        output_names = [out.name for out in self.onnx_policy_session.get_outputs()]
 
         self.onnx_input_names = input_names
         self.onnx_output_names = output_names
@@ -224,10 +252,8 @@ class BasePolicy:
             #     'actor_obs_upper_body': np.array([...]),
             #     'estimator_obs': np.array([...])
             # }
-            input_feed = {name: obs_dict[name]
-                          for name in self.onnx_input_names}
-            outputs = self.onnx_policy_session.run(
-                self.onnx_output_names, input_feed)
+            input_feed = {name: obs_dict[name] for name in self.onnx_input_names}
+            outputs = self.onnx_policy_session.run(self.onnx_output_names, input_feed)
             # just return outputs[0] as only "action" is needed
             return outputs[0]
 
@@ -263,22 +289,12 @@ class BasePolicy:
 
         # Extract base and joint data
         current_obs_buffer_dict["base_quat"] = robot_state_data[:, 3:7]
-        current_obs_buffer_dict["base_ang_vel"] = robot_state_data[
-            :,
-            7 + self.num_dofs + 3: 7 + self.num_dofs + 6
-        ]
-        current_obs_buffer_dict["dof_pos"] = robot_state_data[
-            :,
-            7: 7 + self.num_dofs
-        ] - self.default_dof_angles
-        current_obs_buffer_dict["dof_vel"] = robot_state_data[
-            :, 7 + self.num_dofs + 6: 7 + self.num_dofs + 6 + self.num_dofs
-        ]
+        current_obs_buffer_dict["base_ang_vel"] = robot_state_data[:, 7 + self.num_dofs + 3 : 7 + self.num_dofs + 6]
+        current_obs_buffer_dict["dof_pos"] = robot_state_data[:, 7 : 7 + self.num_dofs] - self.default_dof_angles
+        current_obs_buffer_dict["dof_vel"] = robot_state_data[:, 7 + self.num_dofs + 6 : 7 + self.num_dofs + 6 + self.num_dofs]
         # Calculate projected gravity
         v = np.array([[0, 0, -1]])
-        current_obs_buffer_dict["projected_gravity"] = quat_rotate_inverse_numpy(
-            current_obs_buffer_dict["base_quat"], v
-        )
+        current_obs_buffer_dict["projected_gravity"] = quat_rotate_inverse_numpy(current_obs_buffer_dict["base_quat"], v)
 
         return current_obs_buffer_dict
 
@@ -313,13 +329,12 @@ class BasePolicy:
         if not hasattr(self, "_printed_obs_shapes"):
             self._printed_obs_shapes = True
             if "actor_obs" in self.obs_dict:
-                print("[DEBUG] actor_obs piece widths:",
-                    {name: _np.asarray(current_obs_buffer_dict[name]).reshape(1, -1).shape[1]
-                    for name in sorted(self.obs_dict["actor_obs"])})
+                print(
+                    "[DEBUG] actor_obs piece widths:",
+                    {name: _np.asarray(current_obs_buffer_dict[name]).reshape(1, -1).shape[1] for name in sorted(self.obs_dict["actor_obs"])},
+                )
                 print("[DEBUG] actor_obs total dim:", current_obs_dict["actor_obs"].shape[1])
         return current_obs_dict
-
-
 
     def prepare_obs_for_rl(self, robot_state_data):
         """Prepare observations for RL inference."""
@@ -329,8 +344,7 @@ class BasePolicy:
         self.obs_buf_dict = {
             key: np.concatenate(
                 (
-                    self.obs_buf_dict[key][:, self.obs_dim_dict[key]: (
-                        self.obs_dim_dict[key] * self.history_length_dict[key])],
+                    self.obs_buf_dict[key][:, self.obs_dim_dict[key] : (self.obs_dim_dict[key] * self.history_length_dict[key])],
                     current_obs_dict[key],
                 ),
                 axis=1,
@@ -346,7 +360,7 @@ class BasePolicy:
 
     def get_init_target(self, robot_state_data):
         """Get initialization target joint positions."""
-        dof_pos = robot_state_data[:, 7: 7 + self.num_dofs]
+        dof_pos = robot_state_data[:, 7 : 7 + self.num_dofs]
         if self.get_ready_state:
             # Interpolate from current dof_pos to default angles
             q_target = dof_pos + (self.default_dof_angles - dof_pos) * (self.init_count / 500)
@@ -364,7 +378,7 @@ class BasePolicy:
             q_target = self.get_init_target(robot_state_data)
             self.init_count = min(self.init_count, 500)
         elif not self.use_policy_action:
-            q_target = robot_state_data[:, 7: 7 + self.num_dofs]
+            q_target = robot_state_data[:, 7 : 7 + self.num_dofs]
         else:
             # Apply policy action
             scaled_policy_action = self.rl_inference(robot_state_data)
@@ -374,22 +388,18 @@ class BasePolicy:
                         [np.zeros((1, self.num_dofs - scaled_policy_action.shape[1])), scaled_policy_action], axis=1
                     )
                 else:
-                    raise NotImplementedError(
-                        "Upper body controller not implemented")
+                    raise NotImplementedError("Upper body controller not implemented")
             q_target = scaled_policy_action + self.default_dof_angles
 
         # Clip target positions to motor limits
         if self.motor_pos_lower_limit_list and self.motor_pos_upper_limit_list:
-            q_target[0] = np.clip(
-                q_target[0], self.motor_pos_lower_limit_list, self.motor_pos_upper_limit_list)
+            q_target[0] = np.clip(q_target[0], self.motor_pos_lower_limit_list, self.motor_pos_upper_limit_list)
 
         # Send command
         cmd_q = q_target[0]
         cmd_dq = np.zeros(self.num_dofs)
         cmd_tau = np.zeros(self.num_dofs)
-        self.command_sender.send_command(
-            cmd_q, cmd_dq, cmd_tau, robot_state_data[0, 7: 7 + self.num_dofs]
-        )
+        self.command_sender.send_command(cmd_q, cmd_dq, cmd_tau, robot_state_data[0, 7 : 7 + self.num_dofs])
 
     def _get_obs_phase_time(self):
         """Calculate phase time for gait."""
@@ -404,6 +414,7 @@ class BasePolicy:
 
     def start_key_listener(self):
         """Start keyboard listener thread."""
+
         def on_press(keycode):
             try:
                 self.handle_keyboard_button(keycode)
@@ -419,17 +430,9 @@ class BasePolicy:
         # Handle stick input
         # Process stick
         if self.wc_msg.keys == 0:
-            self.lin_vel_command[0, 1] = (
-                -(self.wc_msg.lx if abs(self.wc_msg.lx)
-                  > 0.1 else 0.0) * self.stand_command[0, 0]
-            )
-            self.lin_vel_command[0, 0] = (self.wc_msg.ly if abs(self.wc_msg.ly) > 0.1 else 0.0) * self.stand_command[
-                0, 0
-            ]
-            self.ang_vel_command[0, 0] = (
-                -(self.wc_msg.rx if abs(self.wc_msg.rx)
-                  > 0.1 else 0.0) * self.stand_command[0, 0]
-            )
+            self.lin_vel_command[0, 1] = -(self.wc_msg.lx if abs(self.wc_msg.lx) > 0.1 else 0.0) * self.stand_command[0, 0]
+            self.lin_vel_command[0, 0] = (self.wc_msg.ly if abs(self.wc_msg.ly) > 0.1 else 0.0) * self.stand_command[0, 0]
+            self.ang_vel_command[0, 0] = -(self.wc_msg.rx if abs(self.wc_msg.rx) > 0.1 else 0.0) * self.stand_command[0, 0]
         cur_key = self.wc_key_map.get(self.wc_msg.keys, None)
         self.last_key_states = self.key_states.copy()
         if cur_key:
@@ -477,7 +480,7 @@ class BasePolicy:
         self.get_ready_state = False
         self.logger.info(colored("Using policy actions", "blue"))
         self.phase = 0.0
-        if hasattr(self.command_sender, 'no_action'):
+        if hasattr(self.command_sender, "no_action"):
             self.command_sender.no_action = 0
 
     def _handle_stop_policy(self):
@@ -485,7 +488,7 @@ class BasePolicy:
         self.use_policy_action = False
         self.get_ready_state = False
         self.logger.info("Actions set to zero")
-        if hasattr(self.command_sender, 'no_action'):
+        if hasattr(self.command_sender, "no_action"):
             self.command_sender.no_action = 1
 
     def _handle_init_state(self):
@@ -493,7 +496,7 @@ class BasePolicy:
         self.get_ready_state = True
         self.init_count = 0
         self.logger.info("Setting to init state")
-        if hasattr(self.command_sender, 'no_action'):
+        if hasattr(self.command_sender, "no_action"):
             self.command_sender.no_action = 0
 
     def _handle_kp_control(self, keycode):
@@ -544,21 +547,17 @@ class BasePolicy:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Robot")
-    parser.add_argument("--config", type=str,
-                        default="config/g1/g1_29dof.yaml", help="config file")
-    parser.add_argument("--model_path", type=str,
-                        help="path to the ONNX model file")
+    parser.add_argument("--config", type=str, default="config/g1/g1_29dof.yaml", help="config file")
+    parser.add_argument("--model_path", type=str, help="path to the ONNX model file")
     args = parser.parse_args()
 
     with open(args.config) as file:
         config = yaml.safe_load(file)
 
     # Use command line model_path if provided, otherwise use config model_path
-    model_path = args.model_path if args.model_path else config.get(
-        "model_path")
+    model_path = args.model_path if args.model_path else config.get("model_path")
     if not model_path:
-        raise ValueError(
-            "model_path must be provided either via --model_path argument or in config file")
+        raise ValueError("model_path must be provided either via --model_path argument or in config file")
 
     policy = BasePolicy(config, model_path)
     policy.run()

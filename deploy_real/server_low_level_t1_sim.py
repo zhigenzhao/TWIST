@@ -49,25 +49,6 @@ def draw_root_velocity(mujoco_model, mujoco_data, mujoco_viewer, tgt_root_vel, i
 #   - feeds into policy
 #   - runs the sim
 # -------------------------------------------------------------------
-def extract_mimic_obs_to_body_and_wrist(mimic_obs):
-    total_degrees = 33
-    wrist_ids = [27, 32]
-    other_ids = [f for f in range(total_degrees) if f not in wrist_ids]
-    policy_target = mimic_obs[other_ids]
-    wrist_dof_pos = mimic_obs[wrist_ids]
-
-    return policy_target, wrist_dof_pos
-
-
-def aggregate_wrist_dof_pos(body_dof_pos, wrist_dof_pos):
-    total_degrees = 25
-    wrist_ids = [19, 24]
-    other_ids = [f for f in range(total_degrees) if f not in wrist_ids]
-    whole_body_pd_target = np.zeros(total_degrees)
-    whole_body_pd_target[other_ids] = body_dof_pos
-    whole_body_pd_target[wrist_ids] = wrist_dof_pos
-
-    return whole_body_pd_target
 
 
 class RealTimePolicyController:
@@ -95,10 +76,10 @@ class RealTimePolicyController:
             dof_name = mujoco.mj_id2name(self.model, mujoco.mjtObj.mjOBJ_JOINT, self.model.dof_jntid[i])
             print(f"DoF {i}: {dof_name}")
 
-        # print("Body names and their IDs:")
-        # for i in range(self.model.nbody):  # 'nbody' is the number of bodies
-        #     body_name = mujoco.mj_id2name(self.model, mujoco.mjtObj.mjOBJ_BODY, i)
-        #     print(f"Body ID {i}: {body_name}")
+        print("Body names and their IDs:")
+        for i in range(self.model.nbody):  # 'nbody' is the number of bodies
+            body_name = mujoco.mj_id2name(self.model, mujoco.mjtObj.mjOBJ_BODY, i)
+            print(f"Body ID {i}: {body_name}")
 
         print("Motor (Actuator) names and their IDs:")
         for i in range(self.model.nu):  # 'nu' is the number of actuators (motors)
@@ -113,7 +94,7 @@ class RealTimePolicyController:
         self.viewer.cam.distance = 2.0
 
         # Example defaults & placeholders
-        self.num_actions = 23
+        self.num_actions = 27
         self.sim_duration = 100000.0
         self.sim_dt = 0.001
         self.sim_decimation = 20
@@ -123,29 +104,33 @@ class RealTimePolicyController:
         # PD Gains, etc. (adapt as needed)
         self.default_dof_pos = np.array(
             [
+                0.2,
+                -1.35,
+                0.0,
+                -0.5,
+                0.0,
+                0.0,
+                0.0,
+                0.2,
+                1.35,
+                0.0,
+                0.5,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
                 -0.2,
                 0.0,
                 0.0,
                 0.4,
-                -0.2,
-                0.0,  # left leg (6)
+                -0.25,
+                0.0,
                 -0.2,
                 0.0,
                 0.0,
                 0.4,
-                -0.2,
-                0.0,  # right leg (6)
+                -0.25,
                 0.0,
-                0.0,
-                0.0,  # torso (1)
-                0.0,
-                0.4,
-                0.0,
-                1.2,
-                0.0,
-                -0.4,
-                0.0,
-                1.2,
             ]
         )
         """
@@ -155,136 +140,143 @@ class RealTimePolicyController:
         root_vel_relative,  # local root vel
         dof_pos])
         """
-        self.default_mimic_obs = DEFAULT_MIMIC_OBS["g1"]
+        self.default_mimic_obs = DEFAULT_MIMIC_OBS["t1"]
         self.mujoco_default_dof_pos = np.concatenate(
             [
-                np.array([0, 0, 0.793]),
+                np.array([0, 0, 0.67]),
                 np.array([0, 0, 0, 1]),
                 np.array(
                     [
-                        -0.2,
+                        0.2,
+                        -1.35,
+                        0.0,
+                        -0.5,
                         0.0,
                         0.0,
-                        0.4,
-                        -0.2,
-                        0.0,  # left leg (6)
-                        -0.2,
-                        0.0,
-                        0.0,
-                        0.4,
-                        -0.2,
-                        0.0,  # right leg (6)
-                        0.0,
-                        0.0,
-                        0.0,  # torso (1)
                         0.0,
                         0.2,
+                        1.35,
                         0.0,
-                        1.2,
-                        0.0,  # left arm (4)
+                        0.5,
+                        0.0,
+                        0.0,
+                        0.0,
                         0.0,
                         -0.2,
                         0.0,
-                        1.2,
-                        0.0,  # right arm (4)
+                        0.0,
+                        0.4,
+                        -0.25,
+                        0.0,
+                        -0.2,
+                        0.0,
+                        0.0,
+                        0.4,
+                        -0.25,
+                        0.0,
                     ]
                 ),
             ]
         )
         self.stiffness = np.array(
             [
-                100,
-                100,
-                100,
-                150,
-                40,
-                40,
-                100,
-                100,
-                100,
-                150,
-                40,
-                40,
-                150,
-                150,
-                150,
-                40,
-                40,
-                40,
-                40,
-                20,
-                40,
-                40,
-                40,
-                40,
-                20,
+                50,
+                50,
+                50,
+                50,
+                30,
+                30,
+                30,
+                50,
+                50,
+                50,
+                50,
+                30,
+                30,
+                30,
+                200,
+                200,
+                200,
+                200,
+                200,
+                50,
+                50,
+                200,
+                200,
+                200,
+                200,
+                50,
+                50,
             ]
         )
         self.damping = np.array(
             [
-                2,
-                2,
-                2,
-                4,
-                2,
-                2,
-                2,
-                2,
-                2,
-                4,
-                2,
-                2,
-                4,
-                4,
-                4,
-                5,
-                5,
-                5,
-                5,
-                1,
-                5,
-                5,
-                5,
-                5,
-                1,
+                3.0,
+                3.0,
+                3.0,
+                3.0,
+                2.0,
+                2.0,
+                2.0,
+                3.0,
+                3.0,
+                3.0,
+                3.0,
+                2.0,
+                2.0,
+                2.0,
+                5.0,
+                5.0,
+                5.0,
+                5.0,
+                5.0,
+                3.0,
+                3.0,
+                5.0,
+                5.0,
+                5.0,
+                5.0,
+                3.0,
+                3.0,
             ]
         )
         self.torque_limits = np.array(
             [
-                88,
-                139,
-                88,
-                139,
-                50,
-                50,
-                88,
-                139,
-                88,
-                139,
-                50,
-                50,
-                88,
-                50,
-                50,
-                25,
-                25,
-                25,
-                25,
-                25,
-                25,
-                25,
-                25,
-                25,
-                25,
+                18,
+                18,
+                18,
+                18,
+                18,
+                18,
+                18,
+                18,
+                18,
+                18,
+                18,
+                18,
+                18,
+                18,
+                30,
+                45,
+                30,
+                30,
+                60,
+                12,
+                12,
+                45,
+                30,
+                30,
+                60,
+                12,
+                12,
             ]
         )
 
         self.action_scale = 0.5
-
-        self.ankle_idx = [4, 5, 10, 11]
+        self.ankle_idx = [19, 20, 25, 26]
 
         # For multi-step history
-        self.n_mimic_obs = 31
+        self.n_mimic_obs = 8 + 27
         self.n_proprio = self.n_mimic_obs + 3 + 2 + 3 * self.num_actions
         self.proprio_history_buf = deque(maxlen=10)
         for _ in range(10):
@@ -296,43 +288,16 @@ class RealTimePolicyController:
         qpos = self.data.qpos.astype(np.float32)
         qvel = self.data.qvel.astype(np.float32)
 
-        body_ids = [
-            0,
-            1,
-            2,
-            3,
-            4,
-            5,
-            6,
-            7,
-            8,
-            9,
-            10,
-            11,
-            12,
-            13,
-            14,
-            15,
-            16,
-            17,
-            18,  # 19
-            20,
-            21,
-            22,
-            23,  # 24
-        ]
-        wrist_ids = [19, 24]
+        body_ids = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]
 
         whole_body_dof = qpos[7:]
         whole_body_dof_vel = qvel[6:]
         body_dof_pos = qpos[[f + 7 for f in body_ids]]
         body_dof_vel = qvel[[f + 6 for f in body_ids]]
-        wrist_dof_pos = qpos[[f + 7 for f in wrist_ids]]
-        wrist_dof_vel = qvel[[f + 6 for f in wrist_ids]]
 
         quat = self.data.sensor("orientation").data.astype(np.float32)
         ang_vel = self.data.sensor("angular-velocity").data.astype(np.float32)
-        return whole_body_dof, whole_body_dof_vel, body_dof_pos, body_dof_vel, wrist_dof_pos, wrist_dof_vel, quat, ang_vel
+        return whole_body_dof, whole_body_dof_vel, body_dof_pos, body_dof_vel, None, None, quat, ang_vel
 
     def reset_sim(self):
         mujoco.mj_resetData(self.model, self.data)
@@ -362,8 +327,7 @@ class RealTimePolicyController:
 
         # send initial proprio to redis
         proprio_json = json.dumps(self.proprio_history_buf[0].tolist())
-        self.redis_client.set("state_body_g1", proprio_json)
-        self.redis_client.set("state_hand_g1", json.dumps(np.zeros(14).tolist()))
+        self.redis_client.set("state_body_t1", proprio_json)
         try:
             for i in pbar:
                 t_start = time.time()
@@ -374,20 +338,20 @@ class RealTimePolicyController:
                     rpy = quatToEuler(quat)
                     obs_body_dof_vel = body_dof_vel.copy()
                     obs_body_dof_vel[self.ankle_idx] = 0.0
+
                     obs_proprio = np.concatenate(
                         [ang_vel * 0.25, rpy[:2], (body_dof_pos - self.default_dof_pos), obs_body_dof_vel * 0.05, self.last_action]
                     )
                     # send proprio to redis
-                    self.redis_client.set("state_body_g1", json.dumps(obs_proprio.tolist()))
-                    self.redis_client.set("state_hand_g1", json.dumps(np.zeros(14).tolist()))
+                    self.redis_client.set("state_body_t1", json.dumps(obs_proprio.tolist()))
+                    self.redis_client.set("state_hand_t1", json.dumps(np.zeros(14).tolist()))
 
                     # Try to get the latest mimic obs from Redis
                     try:
-                        action_mimic_json = self.redis_client.get("action_mimic_g1")
+                        action_mimic_json = self.redis_client.get("action_mimic_t1")
                         if action_mimic_json is not None:
                             action_mimic_list = json.loads(action_mimic_json)
                             action_mimic = np.array(action_mimic_list, dtype=np.float32)
-                            action_mimic, wrist_dof_pos = extract_mimic_obs_to_body_and_wrist(action_mimic)
                         else:
                             raise Exception("cannot get action mimic from redis")
                     except:
@@ -406,13 +370,12 @@ class RealTimePolicyController:
                     raw_action = np.clip(raw_action, -10.0, 10.0)
                     scaled_actions = raw_action * self.action_scale
                     pd_target = scaled_actions + self.default_dof_pos
-                    pd_target = aggregate_wrist_dof_pos(pd_target, wrist_dof_pos)
                     # debug draw velocity arrow if you want
                     self.viewer.user_scn.ngeom = 0
-                    draw_root_velocity(self.model, self.data, self.viewer, [0, 0, 0], 0, "pelvis", [1, 0, 0, 1])
+                    draw_root_velocity(self.model, self.data, self.viewer, [0, 0, 0], 0, "Trunk", [1, 0, 0, 1])
 
                     # make camera follow the pelvis
-                    pelvis_pos = self.data.xpos[self.model.body("pelvis").id]
+                    pelvis_pos = self.data.xpos[self.model.body("Trunk").id]
                     self.viewer.cam.lookat = pelvis_pos
                     self.viewer.sync()
                     if mp4_writer is not None:
@@ -455,10 +418,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     HERE = os.path.dirname(os.path.abspath(__file__))
 
-    parser.add_argument("--xml_file", default=os.path.join(HERE, "../assets/g1/g1_sim2sim_with_wrist_roll.xml"), help="Mujoco XML file")
-
+    parser.add_argument("--xml_file", default=os.path.join(HERE, "../sim2real/xmls/t1/scene_t1_29dof_sim2sim_fix_head.xml"), help="Mujoco XML file")
     parser.add_argument("--policy_path", help="Path to the policy", default="../assets/twist_general_motion_tracker.pt")
-
     parser.add_argument("--record_video", action="store_true", help="Record a video")
     args = parser.parse_args()
 

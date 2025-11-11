@@ -185,20 +185,20 @@ class T1MimicPrivCfg(HumanoidMimicCfg):
 
     class rewards(HumanoidMimicCfg.rewards):
         regularization_names = [
-            # "feet_stumble",
-            # "feet_contact_forces",
-            # "lin_vel_z",
-            # "ang_vel_xy",
-            # "orientation",
-            # "dof_pos_limits",
-            # "dof_torque_limits",
-            # "collision",
-            # "torque_penalty",
-            # "thigh_torque_roll_yaw",
-            # "thigh_roll_yaw_acc",
-            # "dof_acc",
-            # "dof_vel",
-            # "action_rate",
+            "feet_stumble",
+            "feet_contact_forces",
+            "lin_vel_z",
+            "ang_vel_xy",
+            "orientation",
+            "dof_pos_limits",
+            "dof_torque_limits",
+            "collision",
+            "torque_penalty",
+            "thigh_torque_roll_yaw",
+            "thigh_roll_yaw_acc",
+            "dof_acc",
+            "dof_vel",
+            "action_rate",
         ]
         regularization_scale = 1.0
         regularization_scale_range = [0.8, 2.0]
@@ -317,8 +317,8 @@ class T1MimicPrivCfg(HumanoidMimicCfg):
         ]  # 9 key bodies
         upper_key_bodies = ["left_hand_link", "right_hand_link", "AL5", "AR5", "H2"]
 
-        # motion_file = f"{LEGGED_GYM_ROOT_DIR}/motion_data_configs/twist_dataset_simple.yaml"
-        motion_file = f"{LEGGED_GYM_ROOT_DIR}/motion_data_configs/feasible_motion_dataset_t1_29dof_pace.yaml"
+        motion_file = f"{LEGGED_GYM_ROOT_DIR}/motion_data_configs/twist_dataset_simple.yaml"
+        # motion_file = f"{LEGGED_GYM_ROOT_DIR}/motion_data_configs/feasible_motion_dataset_t1_29dof_pace.yaml"
         reset_consec_frames = 30
 
 
@@ -361,7 +361,7 @@ class T1MimicStuCfg(T1MimicPrivCfg):
         n_priv_info = 3 + 1 + 3 * 9 + 2 + 4 + 1 + 2 * num_actions  # base lin vel, root height, key body pos, contact mask, priv latent
         history_len = 10
 
-        n_obs_single = n_mimic_obs + n_proprio
+        n_obs_single = n_mimic_obs + n_proprio 
         n_priv_obs_single = n_priv_mimic_obs + n_proprio + n_priv_info
 
         num_observations = n_obs_single * (history_len + 1)
@@ -417,20 +417,20 @@ class T1MimicStuRLCfg(T1MimicPrivCfg):
 
     class rewards(HumanoidMimicCfg.rewards):
         regularization_names = [
-            # "feet_stumble",
-            # "feet_contact_forces",
-            # "lin_vel_z",
-            # "ang_vel_xy",
-            # "orientation",
-            # "dof_pos_limits",
-            # "dof_torque_limits",
-            # "collision",
-            # "torque_penalty",
-            # "thigh_torque_roll_yaw",
-            # "thigh_roll_yaw_acc",
-            # "dof_acc",
-            # "dof_vel",
-            # "action_rate",
+            "feet_stumble",
+            "feet_contact_forces",
+            "lin_vel_z",
+            "ang_vel_xy",
+            "orientation",
+            "dof_pos_limits",
+            "dof_torque_limits",
+            "collision",
+            "torque_penalty",
+            "thigh_torque_roll_yaw",
+            "thigh_roll_yaw_acc",
+            "dof_acc",
+            "dof_vel",
+            "action_rate",
         ]
         regularization_scale = 1.0
         regularization_scale_range = [0.8, 2.0]

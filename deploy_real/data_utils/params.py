@@ -41,8 +41,8 @@ DEFAULT_MIMIC_OBS_T1 = np.concatenate([
                     np.array([ 0.0]),
                     # 21 dof
                     np.array([
-                        0.25, -1.4, 0.0, -0.5, # left arm
-                        0.25, 1.4, 0.0, 0.5, # right arm
+                        0.25, -1.4, 0.0, -0.5, 0.0, 0.0, 0.0, # left arm
+                        0.25, 1.4, 0.0, 0.5, 0.0, 0.0, 0.0, # right arm
                         0.0, # waist
                         -0.1, 0.0, 0.0, 0.2, -0.1, 0.0, # left leg
                         -0.1, 0.0, 0.0, 0.2, -0.1, 0.0, # right leg
