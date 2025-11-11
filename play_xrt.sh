@@ -14,8 +14,8 @@ export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH
 # Configuration
 proj_name="t1_student"
 exptid="1"
-checkpoint=10000
-task_name="t1_stu_rl"
+checkpoint=12500
+task_name="t1_stu_rl_xrt"  # Use XRT-optimized task with dummy motion file
 
 # Parse arguments
 mode=${1:-realtime}  # Default to realtime if not specified

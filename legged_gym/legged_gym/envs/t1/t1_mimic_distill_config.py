@@ -577,3 +577,10 @@ class T1MimicStuRLCfgDAgger(T1MimicStuRLCfg):
         activation = "silu"
         layer_norm = True
         motion_latent_dim = 128
+
+class T1MimicStuRLXRTCfg(T1MimicStuRLCfg):
+    """Config for XRT playback - uses dummy motion file for fast loading."""
+    class motion(T1MimicStuRLCfg.motion):
+        # Use minimal dummy motion file for XRT playback
+        # The actual motion comes from XRT mocap, not from this file
+        motion_file = f"{LEGGED_GYM_ROOT_DIR}/motion_data_configs/xrt_dummy_motion.yaml"

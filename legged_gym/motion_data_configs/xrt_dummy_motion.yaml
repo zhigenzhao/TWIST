@@ -1,0 +1,5 @@
+root_path: /home/zzhao300/code/TWIST/legged_gym/motion_data_configs/
+motions:
+  - description: dummy motion for XRT playback (not used)
+    file: xrt_dummy_motion.pkl
+    weight: 1.0
