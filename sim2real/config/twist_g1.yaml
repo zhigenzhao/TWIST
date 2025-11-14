@@ -1,5 +1,5 @@
 ROBOT_TYPE: "t1_23dof" # Robot name, "t1_23dof", "g1_29dof", "go2", "b2", "b2w", "h1", "go2w"
-ROBOT_SCENE: "sim2real/xmls/g1/g1_sim2sim.xml" # Robot scene, for Sim2Sim
+ROBOT_SCENE: "/home/keseterg/Expansion1/Documents/TWIST/assets/g1/g1_sim2sim.xml" # Robot scene, for Sim2Sim
 model_path: "sim2real/models/TWIST_G1_Baseline.onnx"
 motion_file: "legged_gym/motion_data_configs/feasible_motion_dataset_g1_29dof_test.yaml"
 
@@ -13,7 +13,7 @@ INTERFACE: "lo" # in simulation, lo0 for mac, lo for linux
 # INTERFACE: "enxa0cec85a586e" # in simulation, lo0 for mac, lo for linux
 
 ENABLE_ELASTIC_BAND: True
-SIMULATE_DT: 0.002
+SIMULATE_DT: 0.005
 VIEWER_DT: 0.01 # Viewer update time
 RL_RATE: 50.0
 POLICY_ACTION_SCALE: 0.5
@@ -21,6 +21,26 @@ POLICY_ACTION_SCALE: 0.5
 # TWIST Policy Config
 TWIST_POLICY_DOFS: 23 # Number of DOFs controlled by the policy
 TWIST_HIST_LEN: 10 # Number of DOFs controlled by the policy
+TWIST_POLICY_INDICES : [
+    0, 1, 2, 3, 4, 5, # Left leg
+    6, 7, 8, 9, 10, 11, # Right leg
+    12, 13, 14, # Waist
+    15, 16, 17, 18, # Left arm
+    19, 20, 21, 22, # Right arm
+]
+TWIST_ANKLE_INDICES: [
+  4, 5, 10, 11
+]
+TWIST_DEFAULT_ROOT_POS: [0.0, 0.0, 0.793]
+TWIST_DEFAULT_JOINT_POS: [
+  -0.2, 0.0, 0.0, 0.4, -0.2, 0.0,  # left leg (6)
+  -0.2, 0.0, 0.0, 0.4, -0.2, 0.0,  # right leg (6)
+  0.0, 0.0, 0.0, # torso (1)
+  # 0.0, 0.2, 0.0, 1.2, # left arm (4)
+  # 0.0, -0.2, 0.0, 1.2, # right arm (4)
+  0.0, 0.2, 0.0, 1.2, # left arm (4)
+  0.0, -0.2, 0.0, 1.2, # right arm (4)
+]
 
 FREE_BASE: False
 USE_JOYSTICK: False

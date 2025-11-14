@@ -36,7 +36,7 @@ class T1MimicPrivCfg(HumanoidMimicCfg):
 
         n_proprio = 3 + 2 + 3 * num_actions
         n_priv_mimic_obs = len(tar_obs_steps) * (8 + num_actions + 3 * 9)  # Hardcode for now, 9 is base, 9 is the number of key bodies
-        n_mimic_obs = 8 + 23  # 23 for dof pos
+        n_mimic_obs = 8 + 27
         n_priv_info = 3 + 1 + 3 * 9 + 2 + 4 + 1 + 2 * num_actions  # base lin vel, root height, key body pos, contact mask, priv latent
         history_len = 10
 
@@ -67,11 +67,11 @@ class T1MimicPrivCfg(HumanoidMimicCfg):
 
         # fmt: off
         dof_err_w = [
-            0.8, 0.8, 0.8, 1.0, 1.0, 1.0, 1.0,              # Left Arm
-            0.8, 0.8, 0.8, 1.0, 1.0, 1.0, 1.0,              # Right Arm
-            0.6,                                            # Waist
-            1.0, 0.8, 0.8, 1.0, 0.5, 0.5,                   # Left Leg
-            1.0, 0.8, 0.8, 1.0, 0.5, 0.5,                   # Right Leg
+            1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,              # Left Arm
+            1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,              # Right Arm
+            0.8,                                            # Waist
+            1.0, 1.0, 1.0, 1.0, 0.5, 0.5,                   # Left Leg
+            1.0, 1.0, 1.0, 1.0, 0.5, 0.5,                   # Right Leg
         ]
         # fmt: on
 
@@ -82,7 +82,7 @@ class T1MimicPrivCfg(HumanoidMimicCfg):
         mesh_type = "trimesh"
         # mesh_type = 'plane'
         # height = [0, 0.02]
-        height = [0, 0.00]
+        height = [0, 0.01]
         horizontal_scale = 0.1
 
     class init_state(HumanoidMimicCfg.init_state):
@@ -245,10 +245,10 @@ class T1MimicPrivCfg(HumanoidMimicCfg):
 
             # ankle_action = -0.02
 
-        min_dist = 0.1
+        min_dist = 0.05
         max_dist = 0.4
         max_knee_dist = 0.4
-        feet_height_target = 0.2
+        feet_height_target = 0.15
         feet_air_time_target = 0.5
         only_positive_rewards = False
         tracking_sigma = 0.2
@@ -266,20 +266,19 @@ class T1MimicPrivCfg(HumanoidMimicCfg):
         gravity_range = (-0.1, 0.1)
 
         randomize_friction = True and domain_rand_general
-        friction_range = [0.1, 2.0]
+        friction_range = [0.1, 2.5]
 
         randomize_base_mass = True and domain_rand_general
-        added_mass_range = [-3.0, 3]
+        added_mass_range = [-1.0, 3.0]
 
         randomize_base_com = True and domain_rand_general
-        added_com_range = [-0.05, 0.05]
+        added_com_range = [-0.02, 0.02]
 
         push_robots = True and domain_rand_general
         push_interval_s = 4
         max_push_vel_xy = 1.0
 
         push_end_effector = True and domain_rand_general
-        # push_end_effector = False
         push_end_effector_interval_s = 2
         max_push_force_end_effector = 20.0
 
@@ -295,11 +294,11 @@ class T1MimicPrivCfg(HumanoidMimicCfg):
 
         class noise_scales:
             dof_pos = 0.01
-            dof_vel = 0.1
+            dof_vel = 0.15
             lin_vel = 0.1
             ang_vel = 0.1
             gravity = 0.05
-            imu = 0.1
+            imu = 0.15
 
     class motion(HumanoidMimicCfg.motion):
         motion_curriculum = True
@@ -317,8 +316,8 @@ class T1MimicPrivCfg(HumanoidMimicCfg):
         ]  # 9 key bodies
         upper_key_bodies = ["left_hand_link", "right_hand_link", "AL5", "AR5", "H2"]
 
-        motion_file = f"{LEGGED_GYM_ROOT_DIR}/motion_data_configs/twist_dataset_simple.yaml"
-        # motion_file = f"{LEGGED_GYM_ROOT_DIR}/motion_data_configs/feasible_motion_dataset_t1_29dof_pace.yaml"
+        # motion_file = f"{LEGGED_GYM_ROOT_DIR}/motion_data_configs/twist_dataset_simple.yaml"
+        motion_file = f"{LEGGED_GYM_ROOT_DIR}/motion_data_configs/feasible_motion_dataset_t1_29dof_pace.yaml"
         reset_consec_frames = 30
 
 
@@ -361,7 +360,7 @@ class T1MimicStuCfg(T1MimicPrivCfg):
         n_priv_info = 3 + 1 + 3 * 9 + 2 + 4 + 1 + 2 * num_actions  # base lin vel, root height, key body pos, contact mask, priv latent
         history_len = 10
 
-        n_obs_single = n_mimic_obs + n_proprio 
+        n_obs_single = n_mimic_obs + n_proprio
         n_priv_obs_single = n_priv_mimic_obs + n_proprio + n_priv_info
 
         num_observations = n_obs_single * (history_len + 1)
@@ -403,7 +402,7 @@ class T1MimicStuRLCfg(T1MimicPrivCfg):
 
         n_proprio = 3 + 2 + 3 * num_actions
         n_priv_mimic_obs = len(tar_obs_steps) * (8 + num_actions + 3 * 9)  # Hardcode for now, 9 is the number of key bodies
-        n_mimic_obs = 8 + 27  # 23 for dof pos
+        n_mimic_obs = 8 + 27  # 27 for dof pos
 
         n_priv_info = 3 + 1 + 3 * 9 + 2 + 4 + 1 + 2 * num_actions  # base lin vel, root height, key body pos, contact mask, priv latent
         history_len = 10
@@ -456,8 +455,8 @@ class T1MimicStuRLCfg(T1MimicPrivCfg):
             dof_torque_limits = -1.0
 
             dof_vel = -1e-4
-            dof_acc = -5e-8
-            action_rate = -0.01
+            dof_acc = -7e-8
+            action_rate = -0.1
 
             feet_air_time = 5.0
 
@@ -473,13 +472,12 @@ class T1MimicStuRLCfg(T1MimicPrivCfg):
 
             ankle_dof_acc = -5e-8 * 2
             ankle_dof_vel = -1e-4 * 2
+            ankle_action = -0.02
 
-            # ankle_action = -0.02
-
-        min_dist = 0.1
+        min_dist = 0.05
         max_dist = 0.4
         max_knee_dist = 0.4
-        feet_height_target = 0.2
+        feet_height_target = 0.15
         feet_air_time_target = 0.5
         only_positive_rewards = False
         tracking_sigma = 0.2
@@ -500,7 +498,7 @@ class T1MimicPrivCfgPPO(HumanoidMimicCfgPPO):
         max_iterations = 30_002  # number of policy updates
 
         # logging
-        save_interval = 500  # check for potential saves every this many iterations
+        save_interval = 2000  # check for potential saves every this many iterations
         experiment_name = "test"
         run_name = ""
         # load and resume
@@ -519,7 +517,7 @@ class T1MimicPrivCfgPPO(HumanoidMimicCfgPPO):
         # schedule = 'fixed' # could be adaptive, fixed
 
     class policy(HumanoidMimicCfgPPO.policy):
-        action_std = [0.7] * 12 + [0.4] * 3 + [0.5] * 8
+        action_std = [0.5] * 14 + [0.4] * 1 + [0.7] * 12
         init_noise_std = 1.0
         obs_context_len = 11
         actor_hidden_dims = [512, 512, 256, 128]
@@ -543,7 +541,7 @@ class T1MimicStuRLCfgDAgger(T1MimicStuRLCfg):
         warm_iters = 100
 
         # logging
-        save_interval = 500
+        save_interval = 2000
         experiment_name = "test"
         run_name = ""
         resume = False
@@ -569,7 +567,7 @@ class T1MimicStuRLCfgDAgger(T1MimicStuRLCfg):
         # dagger_coef_min = 0.0  # Minimum value for dagger_coef
 
     class policy(HumanoidMimicCfgPPO.policy):
-        action_std = [0.7] * 12 + [0.4] * 3 + [0.5] * 8
+        action_std = [0.5] * 14 + [0.4] * 1 + [0.7] * 12
         init_noise_std = 1.0
         obs_context_len = 11
         actor_hidden_dims = [512, 512, 256, 128]
