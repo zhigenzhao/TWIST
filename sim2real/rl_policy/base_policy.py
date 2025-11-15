@@ -22,7 +22,7 @@ class BasePolicy:
     Supports both simulation and real robot deployment with keyboard/joystick controls.
     """
 
-    def __init__(self, config, model_path, rl_rate=50, policy_action_scale=0.25):
+    def __init__(self, config, model_path):
         """Initialize the base policy with configuration and model."""
         self.config = config
         # Initialize robot config
@@ -34,7 +34,7 @@ class BasePolicy:
         # Initialize communication components
         self._init_communication_components()
         # Initialize policy components
-        self._init_policy_components(model_path, policy_action_scale, rl_rate)
+        self._init_policy_components(model_path)
         # Initialize command components
         self._init_command_components()
         # Initialize input handlers
@@ -109,13 +109,13 @@ class BasePolicy:
         self.state_processor = create_state_processor(self.config)
         self.command_sender = create_command_sender(self.config)
 
-    def _init_policy_components(self, model_path, policy_action_scale, rl_rate):
+    def _init_policy_components(self, model_path):
         """Initialize policy-related components."""
         self.setup_policy(model_path)
         self.last_policy_action = np.zeros((1, self.num_dofs))
         self.last_last_policy_action = np.zeros((1, self.num_dofs))
         self.scaled_policy_action = np.zeros((1, self.num_dofs))
-        self.policy_action_scale = policy_action_scale
+        self.policy_action_scale = self.config.get("POLICY_ACTION_SCALE", 0.5)
 
     def _init_command_components(self):
         """Initialize control-related components and commands."""
@@ -150,7 +150,7 @@ class BasePolicy:
         from loguru import logger
 
         self.logger = logger
-        self.rate = RateLimiter(self.config.get("rl_rate", 50))
+        self.rate = RateLimiter(self.config.get("RL_RATE", 50))
 
     def _init_input_device(self):
         """Initialize input device (joystick or keyboard)."""

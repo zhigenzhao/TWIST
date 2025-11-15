@@ -7,10 +7,10 @@ SDK_TYPE: "booster" # SDK type, "unitree", "booster"
 MOTOR_TYPE: "serial" # Motor type, "serial" or "parallel"
 
 DOMAIN_ID: 0 # Domain id
-NET: 127.0.0.1
-INTERFACE: "lo" # in simulation, lo0 for mac, lo for linux
-# NET: 192.168.10.10
-# INTERFACE: "enx34298f67081a" # in simulation, lo0 for mac, lo for linux
+# NET: 127.0.0.1
+# INTERFACE: "lo" # in simulation, lo0 for mac, lo for linux
+NET: 192.168.10.10
+INTERFACE: "enx34298f67081a" # in simulation, lo0 for mac, lo for linux
 
 ENABLE_ELASTIC_BAND: True
 SIMULATE_DT: 0.002
@@ -145,15 +145,15 @@ MOTOR_KP:
     150,
     150,
     150,
-    10.0,
-    10.0,
+    15.0,
+    15.0,
 
     150,
     150,
     150,
     150,
-    10.0,
-    10.0,
+    22.0,
+    22.0,
   ]
 
 MOTOR_KD:
@@ -183,15 +183,15 @@ MOTOR_KD:
     5.0,
     5.0,
     5.0,
-    1.0,
-    1.0,
+    0.8,
+    0.8,
 
     5.0,
     5.0,
     5.0,
     5.0,
-    1.0,
-    1.0,
+    0.8,
+    0.8,
   ]
 
 dof_names:

@@ -18,6 +18,7 @@ import mujoco as mj
 
 from sim2real.rl_policy.base_policy import BasePolicy
 from booster_robotics_sdk_python import RobotMode
+from motion_loader import MotionLoader
 
 np.set_printoptions(precision=3, suppress=True)
 
@@ -57,10 +58,8 @@ def quat_rotate_inverse(q, v):
 
 
 class TwistPolicy(BasePolicy):
-    def __init__(self, config, model_path, headless=True):
-        rl_rate = config.get("RL_RATE", 50)
-        policy_action_scale = config.get("POLICY_ACTION_SCALE", 0.5)
-        super().__init__(config, model_path, rl_rate, policy_action_scale)
+    def __init__(self, config, model_path):
+        super().__init__(config, model_path)
 
         # Load robot model for reference motion
         self.mj_model = mj.MjModel.from_xml_path(self.config.get("ROBOT_SCENE"))
@@ -91,20 +90,31 @@ class TwistPolicy(BasePolicy):
 
         # Load motion file for reference trajectories
         self.motion_file_path = self.config.get("MOTION_FILE_PATH", None)
-        self.reference_motion_state = {
+        self.default_motion_reference = {
             "root_pos": np.array(self.config.get("TWIST_DEFAULT_ROOT_POS")),
-            "root_quat": np.array([1, 0, 0, 0]),
+            "root_quat": np.array([0, 0, 0, 1]),
             "root_vel": np.zeros(3),
             "root_ang_vel": np.zeros(3),
             "dof_pos": np.array(self.config.get("TWIST_DEFAULT_JOINT_POS")),
         }
+        if self.motion_file_path:
+            self.motion_loader = MotionLoader(self.motion_file_path, self.default_motion_reference)
 
-    def get_mimic_obs(self, reference_motion_state):
-        root_pos = reference_motion_state.get("root_pos", np.zeros(3))
-        root_rot = reference_motion_state.get("root_quat", np.array([1, 0, 0, 0]))
-        root_linvel = reference_motion_state.get("root_vel", np.zeros(3))
-        root_angvel = reference_motion_state.get("root_ang_vel", np.zeros(3))
-        dof_pos = reference_motion_state.get("dof_pos", np.zeros(self.n_policy_dofs))
+        # Bug: force start booster
+        print(self.command_sender.client.ChangeMode(RobotMode.kCustom))
+
+    def get_mimic_obs(self):
+        if self.motion_loader:
+            ref = self.motion_loader.get_motion_reference()
+        else:
+            ref = self.default_motion_reference
+
+        root_pos = ref.get("root_pos", np.zeros(3))
+        root_rot = ref.get("root_quat", np.array([0, 0, 0, 1]))
+        root_rot = root_rot[[3, 0, 1, 2]]
+        root_linvel = ref.get("root_vel", np.zeros(3))
+        root_angvel = ref.get("root_ang_vel", np.zeros(3))
+        dof_pos = ref.get("dof_pos", np.zeros(self.n_policy_dofs))
 
         # Convert to euler
         roll, pitch, yaw = euler_from_quat(root_rot)
@@ -135,13 +145,14 @@ class TwistPolicy(BasePolicy):
         ang_vel_scaled = obs_dict["base_ang_vel"] * self.obs_scales["ang_vel"]
 
         # qpos and qvel
-        dof_pos = obs_dict["dof_pos"][:, self.policy_dof_indices] * self.obs_scales["dof_pos"]
+        dof_pos = obs_dict["dof_pos"]
+        dof_pos = dof_pos[:, self.policy_dof_indices] * self.obs_scales["dof_pos"]
         dof_vel = obs_dict["dof_vel"]
         dof_vel[:, self.ankle_indices] = 0.0
-        dof_vel = dof_vel[:, self.policy_dof_indices] * self.obs_scales["dof_vel"]
+        dof_vel = dof_vel[:, self.policy_dof_indices] * self.obs_scales["dof_vel"] * 0.01
 
         # Last action
-        last_action = self.last_action
+        last_action = self.last_action.copy()
 
         # Prepare full proprioceptive observation: 3 + 2 + 3 * n_policy_dofs
         proprio_obs = np.concatenate(
@@ -157,8 +168,8 @@ class TwistPolicy(BasePolicy):
 
         return proprio_obs
 
-    def construct_current_obs(self, robot_state_data, reference_motion_state):
-        mimic_obs = self.get_mimic_obs(reference_motion_state)
+    def construct_current_obs(self, robot_state_data):
+        mimic_obs = self.get_mimic_obs()
         proprio_obs = self.get_proprio_obs(robot_state_data)
         current_obs = np.concatenate(
             [
@@ -181,7 +192,7 @@ class TwistPolicy(BasePolicy):
         return obs_full.reshape(1, -1)
 
     def rl_inference(self, robot_state_data):
-        current_obs = self.construct_current_obs(robot_state_data, self.reference_motion_state)
+        current_obs = self.construct_current_obs(robot_state_data)
         obs_full = self.update_obs_history(current_obs)
         policy_action = self.policy({"observations": obs_full.astype(np.float32)})
         self.last_action = policy_action.copy()
@@ -192,6 +203,15 @@ class TwistPolicy(BasePolicy):
     def handle_keyboard_button(self, keycode):
         """Handle keyboard button presses."""
         super().handle_keyboard_button(keycode)
+
+        if keycode == "q":
+            self.motion_loader.play()
+        elif keycode == "w":
+            self.motion_loader.stop()
+        elif keycode == "r":
+            self.motion_loader.go_to_start(3.0)
+        elif keycode == "t":
+            self.motion_loader.go_to_default(3.0)
 
     def policy_action(self):
         """Execute TWIST policy action and send commands to robot."""

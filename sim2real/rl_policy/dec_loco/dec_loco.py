@@ -15,8 +15,8 @@ from termcolor import colored
 
 
 class DecLocomotionPolicy(BasePolicy):
-    def __init__(self, config, model_path, rl_rate=50, policy_action_scale=0.25):
-        super().__init__(config, model_path, rl_rate, policy_action_scale)
+    def __init__(self, config, model_path):
+        super().__init__(config, model_path)
         self.num_lower_dofs = self.num_dofs - self.num_upper_dofs
         # Force bootstrap "actions" to match the ONNX/YAML (lower-body only).
         # BasePolicy initializes last_policy_action with shape (1, num_dofs).

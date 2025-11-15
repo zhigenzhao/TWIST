@@ -136,7 +136,7 @@ class HumanoidChar(LeggedRobot):
             self.privileged_obs_buf = torch.clip(self.privileged_obs_buf, -clip_obs, clip_obs)
 
         torch.set_printoptions(precision=3, sci_mode=False, threshold=10000)
-        print(f"obs: {self.obs_buf[0, :121]}, shape: {self.obs_buf.shape}")
+        print(f"obs: {self.obs_buf[0, 35:121]}, shape: {self.obs_buf.shape}")
 
         return self.obs_buf, self.privileged_obs_buf, self.rew_buf, self.reset_buf, self.extras
 

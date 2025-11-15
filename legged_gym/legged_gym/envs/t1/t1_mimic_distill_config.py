@@ -128,8 +128,8 @@ class T1MimicPrivCfg(HumanoidMimicCfg):
             "Ankle": 50,
             "Shoulder": 50,
             "Elbow": 50,
-            "Wrist": 50,
-            "Hand": 50,
+            "Wrist": 30,
+            "Hand": 30,
         }  # [N*m/rad]
         damping = {
             # "Head": 0.2,
@@ -139,8 +139,8 @@ class T1MimicPrivCfg(HumanoidMimicCfg):
             "Ankle": 3.0,
             "Shoulder": 3.0,
             "Elbow": 3.0,
-            "Wrist": 3.0,
-            "Hand": 3.0,
+            "Wrist": 2.0,
+            "Hand": 2.0,
         }  #  # [N*m*s/rad]
 
         action_scale = 0.5
@@ -317,7 +317,8 @@ class T1MimicPrivCfg(HumanoidMimicCfg):
         upper_key_bodies = ["left_hand_link", "right_hand_link", "AL5", "AR5", "H2"]
 
         # motion_file = f"{LEGGED_GYM_ROOT_DIR}/motion_data_configs/twist_dataset_simple.yaml"
-        motion_file = f"{LEGGED_GYM_ROOT_DIR}/motion_data_configs/feasible_motion_dataset_t1_29dof_pace.yaml"
+        motion_file = f"{LEGGED_GYM_ROOT_DIR}/motion_data_configs/twist_dataset_simple_hibay.yaml"
+        # motion_file = f"{LEGGED_GYM_ROOT_DIR}/motion_data_configs/feasible_motion_dataset_t1_29dof_pace.yaml"
         reset_consec_frames = 30
 
 
