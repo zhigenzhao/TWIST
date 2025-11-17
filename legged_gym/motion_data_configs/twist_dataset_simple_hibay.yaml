@@ -1,0 +1,14 @@
+root_path: /home/zimengchai/Documents/Data/feasible_motion_dataset_t1_29dof
+motions:
+  # - description: general movement
+  #   file: kit/dance_waltz10.pkl
+  #   weight: 1.0
+
+  - description: general movement
+    file: transitions/JOOF_longjump.pkl
+    weight: 1.0
+
+  - description: general movement
+    file: xrt_data_1113_t1_29dof_height_fixed/recording_20251113_100549.pkl
+    weight: 1.0
+    

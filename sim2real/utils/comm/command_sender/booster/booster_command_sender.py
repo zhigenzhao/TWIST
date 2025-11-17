@@ -5,7 +5,7 @@ from ..base import BasicCommandSender
 
 class BoosterCommandSender(BasicCommandSender):
     """Booster command sender implementation."""
-    
+
     def _init_sdk_components(self):
         """Initialize Booster SDK-specific components."""
         from booster_robotics_sdk_python import (
@@ -16,9 +16,9 @@ class BoosterCommandSender(BasicCommandSender):
             RobotMode,
         )
         from booster_robotics_sdk_python import LowCmd as LowCmd
-        
+
         robot_type = self.config["ROBOT_TYPE"]
-        
+
         if robot_type in ["t1_23dof", "t1_29dof"]:
             self.LowCmd = LowCmd
             self.LowCmdType = LowCmdType
@@ -58,10 +58,10 @@ class BoosterCommandSender(BasicCommandSender):
         else:
             raise NotImplementedError(f"Motor type {self.motor_type} is not supported yet")
         self.low_cmd.motor_cmd = self.motor_cmds
-        
+
         motor_cmd = self.low_cmd.motor_cmd
         self._fill_motor_commands(motor_cmd, cmd_q, cmd_dq, cmd_tau)
-        
+
         # Send command
         self.lowcmd_publisher_.Write(self.low_cmd)
 
@@ -103,4 +103,4 @@ class BoosterCommandSender(BasicCommandSender):
             low_cmd.motor_cmd[i].kp = cfg["common"]["stiffness"][i]
             low_cmd.motor_cmd[i].kd = cfg["common"]["damping"][i]
             low_cmd.motor_cmd[i].q = cfg["common"]["default_qpos"][i]
-        return low_cmd 
+        return low_cmd

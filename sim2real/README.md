@@ -21,7 +21,9 @@ This folder provides seamless sim2sim/sim2real deployment scripts for both Unitr
 - [Sim2Real Tips](#sim2real-tips)
 
 ## Pre-Configuration
+
 Here, we use `config/g1/g1_29dof.yaml`. Before testing sim2sim/sim2real, check the `ROBOT_TYPE`, `SDK_TYPE`, and `INTERFACE` in the `.yaml` file:
+
 ```yaml
 ROBOT_TYPE: 'g1_29dof' # Robot name, "t1_29dof", "g1_29dof"...
 
@@ -43,28 +45,38 @@ JOYSTICK_TYPE: "xbox" # support "xbox" and "switch" gamepad layout; Unitree Wire
 ```
 
 # Installation
+
 ## Prebuild environment
+
 * OS  (Ubuntu 22.04 LTS)  
-* CPU  (aarch64 and x86_64)   
-* Compiler  (gcc version 11.4.0) 
+- CPU  (aarch64 and x86_64)
+- Compiler  (gcc version 11.4.0)
 
 ## Create a conda env
+
 ```
 conda create -n fcreal python=3.10
 conda activate fcreal
 ```
+
 ## Install Pinocchio for Inverse Kinematics
+
 ```
 conda install pinocchio=3.2.0 -c conda-forge
 ```
+
 ## Install unitree_sdk2_python for Unitree G1 deployment
+
 ```
 git clone https://github.com/unitreerobotics/unitree_sdk2_python.git
 cd unitree_sdk2_python
 pip install -e .
 ```
+
 ## Install booster_robotics_sdk for Booster T1 deployment
+
 Note that the official [booster_robotics_sdk](https://github.com/BoosterRobotics/booster_robotics_sdk) does not provide state publisher and command receiver, so I improve the repo a bit and add them in my [forked repo](https://github.com/hang0610/booster_robotics_sdk). Also booster sdk is NOT supported on Mac OS yet.
+
 ```bash
 git clone https://github.com/hang0610/booster_robotics_sdk
 # Install python package for building python binding locally
@@ -77,13 +89,16 @@ cmake .. -DBUILD_PYTHON_BINDING=on
 make
 sudo make install
 ```
+
 ## Install others
+
 ```bash
 cd sim2real
 pip install -r requirements.txt
 ```
 
 # Deployment
+>
 > [!IMPORTANT]
 > For sim2sim, you need to start Mujoco and then launch the policy, but for sim2real, you **only** need to launch the policy.
 > Make sure you read the keyboard and joystick control protocol in `sim2real/rl_policy/base_policy.py`.
@@ -95,6 +110,7 @@ pip install -r requirements.txt
 ## G1 29DoF Locomotion
   
 Here, we fix the upper body target joint angles to the default, and the policy only outputs the lower body action.
+
 ### 1. Start Mujoco Env (ONLY for Sim2Sim)
 
 ```bash
@@ -110,7 +126,7 @@ python rl_policy/dec_loco/dec_loco.py \
 --model_path=models/dec_loco/g1_29dof.onnx 
 ```
 
-https://github.com/user-attachments/assets/dc2d8821-6361-49a8-93cd-fb443bd63c39
+<https://github.com/user-attachments/assets/dc2d8821-6361-49a8-93cd-fb443bd63c39>
 
 </details>
 
@@ -166,49 +182,60 @@ python rl_policy/loco_manip/loco_manip.py \
 --model_path=models/falcon/g1_29dof.onnx 
 ```
 
-https://github.com/user-attachments/assets/273b52c1-0248-40e5-b218-e078e74b322d
+<https://github.com/user-attachments/assets/273b52c1-0248-40e5-b218-e078e74b322d>
 
 ## T1 29DoF FALCON
+
 ### 1. Start Mujoco Env (ONLY for Sim2Sim)
+
 ```bash
 python sim_env/loco_manip.py \
 --config=config/t1/t1_29dof_falcon.yaml 
 ```
+
 ### 2. Luanch the Policy
+
 ```bash
 python rl_policy/loco_manip/loco_manip.py \
 --config=config/t1/t1_29dof_falcon.yaml \
 --model_path=models/falcon/t1_29dof.onnx
 ```
 
-https://github.com/user-attachments/assets/e35ff90e-428b-41ea-8cac-64d9906c78e8
+<https://github.com/user-attachments/assets/e35ff90e-428b-41ea-8cac-64d9906c78e8>
 
 ## Sim2Real Tips
+>
 > [!CAUTION]
 > **FALCON is a strong policy trained for robust locomotion and manipulation.** Before deploying to real robots, ensure:
 
 ### Network Configuration
+
 - Set correct `INTERFACE` in config file (e.g., 'en0', 'eth0')
 - Verify network connectivity between computer and robot
 - Check firewall settings if using specific ports
 
 ### Testing Protocol
+
 1. Always do sim2sim before real-robot deployment
 2. Start with small kp, kd gains
 3. Ensure robot feet touch the ground before running falcon policies
 
 ### Emergency Control
+
 - **Keyboard**: Press 'o' to stop policy actions
 - **Joystick**: Press 'B+Y' to stop policy actions
 
 ### Real-time Inference
+
 - `unitree_sdk2_python` can not guarantee real-time inference on Jetson Orin inside of Unitree G1 as `unitree_sdk2_python` is fully written in python, while `booster_robotics_sdk` works fine as its backend is written in cpp with a pybinding wrapper.
 - It's recommended to use `unitree_sdk2` for real-time onboard inference on Unitree G1. Please check this [repo](https://github.com/hang0610/unitree_sdk2/tree/main) for the pybinding wrapper I wrote for `unitree_sdk2`.
 
 I recommend you to use `unitree_sdk2` for real-time inference onboard. I have written a pybinding wrapper for it. Please check this [repo](https://github.com/hang0610/unitree_sdk2) (currently no README for this pybinding wrapper, but will update soon).
 
 # Acknowledgement
+
 We thank the following open-sourced repos that we build upon:
+
 - [unitree_mujoco](https://github.com/unitreerobotics/unitree_mujoco)
 - [xr_teleoperate](https://github.com/unitreerobotics/xr_teleoperate)
 - [unitree_sdk2_python](https://github.com/unitreerobotics/unitree_sdk2_python)

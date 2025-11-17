@@ -166,7 +166,7 @@ class T1MimicDistill(HumanoidMimic):
                 dof_pos,  # num_dof dims
             ),
             dim=-1,
-        )[:, 0:1]  # shape: (num_envs, 1, 7 + num_dof)
+        )[:, 0:1]  # shape: (num_envs, 1, 8 + num_dof)
 
         return priv_mimic_obs_buf.reshape(self.num_envs, -1), mimic_obs_buf.reshape(self.num_envs, -1)
 
@@ -269,20 +269,20 @@ class T1MimicDistill(HumanoidMimic):
     ############################################################################################################
 
     def _reward_waist_dof_acc(self):
-        waist_dof_idx = [13, 14]
+        waist_dof_idx = [14]
         return torch.sum(torch.square((self.last_dof_vel - self.dof_vel) / self.dt)[:, waist_dof_idx], dim=1)
 
     def _reward_waist_dof_vel(self):
-        waist_dof_idx = [13, 14]
+        waist_dof_idx = [14]
         return torch.sum(torch.square(self.dof_vel[:, waist_dof_idx]), dim=1)
 
     def _reward_ankle_dof_acc(self):
-        ankle_dof_idx = [4, 5, 10, 11]
+        ankle_dof_idx = [19, 20, 25, 26]
         return torch.sum(torch.square((self.last_dof_vel - self.dof_vel) / self.dt)[:, ankle_dof_idx], dim=1)
 
     def _reward_ankle_dof_vel(self):
-        ankle_dof_idx = [4, 5, 10, 11]
+        ankle_dof_idx = [19, 20, 25, 26]
         return torch.sum(torch.square(self.dof_vel[:, ankle_dof_idx]), dim=1)
 
     def _reward_ankle_action(self):
-        return torch.norm(self.action_history_buf[:, -1, [4, 5, 10, 11]], dim=1)
+        return torch.norm(self.action_history_buf[:, -1, [19, 20, 25, 26]], dim=1)

@@ -1,39 +1,54 @@
 ROBOT_TYPE: "t1_29dof" # Robot name, "t1_23dof", "g1_29dof", "go2", "b2", "b2w", "h1", "go2w"
-ROBOT_SCENE: "sim2real/xmls/scene_t1_29dof_sim2sim.xml" # Robot scene, for Sim2Sim
-model_path: "sim2real/models/foot_track/FootTrack_20251106_1335_DoubleStep_ActRate5.0_AnklePosture10.0_model_17000.onnx"
-ik_xml_path: "sim2real/xmls/scene_t1_ik.xml"
+ROBOT_SCENE: "sim2real/xmls/t1/scene_t1_29dof_sim2sim.xml" # Robot scene, for Sim2Sim
+model_path: "sim2real/models/TWIST_Baseline_1110.onnx"
+MOTION_FILE_PATH: "/home/zimengchai/Documents/Data/feasible_motion_dataset_t1_29dof/cmu/12_04.pkl"
 
 SDK_TYPE: "booster" # SDK type, "unitree", "booster"
 MOTOR_TYPE: "serial" # Motor type, "serial" or "parallel"
 
 DOMAIN_ID: 0 # Domain id
-NET: 127.0.0.1
-INTERFACE: "lo" # in simulation, lo0 for mac, lo for linux
-# NET: 192.168.10.10
-# INTERFACE: "enxa0cec85a586e" # in simulation, lo0 for mac, lo for linux
+# NET: 127.0.0.1
+# INTERFACE: "lo" # in simulation, lo0 for mac, lo for linux
+NET: 192.168.10.10
+INTERFACE: "enx34298f67081a" # in simulation, lo0 for mac, lo for linux
 
-FREE_BASE: False # True
-
-PRINT_SCENE_INFORMATION: True # Print link, joint and sensors information of robot
-ENABLE_ELASTIC_BAND: True # Virtual spring band, used for lifting h1
-
-SIMULATE_DT: 0.005 # Need to be larger than the runtime of viewer.sync()
+ENABLE_ELASTIC_BAND: True
+SIMULATE_DT: 0.002
 VIEWER_DT: 0.01 # Viewer update time
-GAIT_PERIOD: 0.666666667
-USE_SENSOR: False
+RL_RATE: 50.0
+POLICY_ACTION_SCALE: 0.5
 
-USE_JOYSTICK: 0 # Simulate Unitree WirelessController using a gamepad (0: disable, 1: enable)
+# TWIST Policy Config
+TWIST_POLICY_DOFS: 27 # Number of DOFs controlled by the policy
+TWIST_HIST_LEN: 10 # Number of DOFs controlled by the policy
+TWIST_POLICY_INDICES : [
+    2, 3, 4, 5, 6, 7, 8,
+    9, 10, 11, 12, 13, 14, 15,
+    16,
+    17, 18, 19, 20, 21, 22,
+    23, 24, 25, 26, 27, 28
+]
+TWIST_ANKLE_INDICES: [
+  21, 22, 27, 28
+]
+TWIST_DEFAULT_ROOT_POS: [0.0, 0.0, 0.65]
+TWIST_DEFAULT_JOINT_POS: [
+    0.25, -1.4, 0.0, -0.5, 0.0, 0.0, 0.0, # left arm
+    0.25, 1.4, 0.0, 0.5, 0.0, 0.0, 0.0, # right arm
+    0.0, # waist
+    -0.1, 0.0, 0.0, 0.2, -0.1, 0.0, # left leg
+    -0.1, 0.0, 0.0, 0.2, -0.1, 0.0, # right leg
+]
+
+
+FREE_BASE: False
+USE_JOYSTICK: False
+USE_SENSOR: False
 JOYSTICK_TYPE: "xbox" # support "xbox" and "switch" gamepad layout
 JOYSTICK_DEVICE: 0 # Joystick number
 
 VISUALIZE_PIN: False
 VISUALIZE_FORCES: True
-
-residual_upper_body_action: False # Whether to use residual upper body action for balancing
-use_upper_body_controller: False # Whether to use upper body controller
-
-DESIRED_BASE_HEIGHT: 0.6 # Desired base height
-
 BASE_BODY_NAME: "Trunk" # Base body name
 BAND_ATTACHED_LINK: "Trunk" # Band attached link name
 
@@ -103,91 +118,6 @@ JOINT2MOTOR:
     28,
   ]
 
-UNITREE_LEGGED_CONST:
-  HIGHLEVEL: 0xEE
-  LOWLEVEL: 0xFF
-  TRIGERLEVEL: 0xF0
-  PosStopF: 2146000000.0
-  VelStopF: 16000.0
-  MODE_MACHINE: 5
-  MODE_PR: 0
-
-JOINT_KP:
-  [
-    20,
-    20,
-
-    50,
-    50,
-    50,
-    50,
-    30,
-    30,
-    30,
-
-    50,
-    50,
-    50,
-    50,
-    30,
-    30,
-    30,
-
-    200,
-
-    200,
-    200,
-    200,
-    200,
-    60,
-    60,
-
-    200,
-    200,
-    200,
-    200,
-    60,
-    60,
-  ]
-
-JOINT_KD:
-  [
-    0.5,
-    0.5,
-
-    3.0,
-    3.0,
-    3.0,
-    3.0,
-    2.0,
-    2.0,
-    2.0,
-
-    3.0,
-    3.0,
-    3.0,
-    3.0,
-    2.0,
-    2.0,
-    2.0,
-
-    5.0,
-
-    5.0,
-    5.0,
-    5.0,
-    5.0,
-    3.0,
-    3.0,
-
-    5.0,
-    5.0,
-    5.0,
-    5.0,
-    3.0,
-    3.0,
-  ]
-
 MOTOR_KP:
   [
     20,
@@ -209,21 +139,21 @@ MOTOR_KP:
     30,
     30,
 
-    200,
+    150,
 
-    200,
-    200,
-    200,
-    200,
-    50,
-    50,
+    150,
+    150,
+    150,
+    150,
+    15.0,
+    15.0,
 
-    200,
-    200,
-    200,
-    200,
-    50,
-    50,
+    150,
+    150,
+    150,
+    150,
+    22.0,
+    22.0,
   ]
 
 MOTOR_KD:
@@ -253,15 +183,15 @@ MOTOR_KD:
     5.0,
     5.0,
     5.0,
-    3.0,
-    3.0,
+    0.8,
+    0.8,
 
     5.0,
     5.0,
     5.0,
     5.0,
-    3.0,
-    3.0,
+    0.8,
+    0.8,
   ]
 
 dof_names:
@@ -371,33 +301,8 @@ WeakMotorJointIndex:
 
 NUM_MOTORS: 29
 NUM_JOINTS: 29
-NUM_UPPER_BODY_JOINTS:
-  17
+NUM_UPPER_BODY_JOINTS: 17
 
-  # default_joint_angles: # = target angles [rad] when action = 0.0
-  #   AAHead_yaw: 0.
-  #   Head_pitch: 0.
-  #   Left_Shoulder_Pitch: 0.2
-  #   Left_Shoulder_Roll: -1.35
-  #   Left_Elbow_Pitch: 0.
-  #   Left_Elbow_Yaw: -0.5
-  #   Right_Shoulder_Pitch: 0.2
-  #   Right_Shoulder_Roll: 1.35
-  #   Right_Elbow_Pitch: 0.
-  #   Right_Elbow_Yaw: 0.5
-  #   Waist: 0.
-  #   Left_Hip_Pitch: -0.2
-  #   Left_Hip_Roll: 0.
-  #   Left_Hip_Yaw: 0.
-  #   Left_Knee_Pitch: 0.4
-  #   Left_Ankle_Pitch: -0.25
-  #   Left_Ankle_Roll: 0.
-  #   Right_Hip_Pitch: -0.2
-  #   Right_Hip_Roll: 0.
-  #   Right_Hip_Yaw: 0.
-  #   Right_Knee_Pitch: 0.4
-  #   Right_Ankle_Pitch: -0.25
-  #   Right_Ankle_Roll: 0.
 DEFAULT_DOF_ANGLES: [
     0.0, # AAHead_yaw
     0.0, # Head_pitch
@@ -430,40 +335,6 @@ DEFAULT_DOF_ANGLES: [
     0.0, # Right_Ankle_Roll
   ]
 
-# DEFAULT_DOF_ANGLES: [
-#     0.0, # AAHead_yaw
-#     0.0, # Head_pitch
-
-#     0.45, # Left_Shoulder_Pitch
-#     -1.08, # Left_Shoulder_Roll
-#     0.02, # Left_Elbow_Pitch
-#     -1.47, # Left_Elbow_Yaw
-#     0.0, # Left_Wrist_Pitch
-#     0.0, # Left_Wrist_Yaw
-#     0.0, # Left_Hand_Roll
-#     0.45, # Right_Shoulder_Pitch
-#     1.08, # Right_Shoulder_Roll
-#     0.02, # Right_Elbow_Pitch
-#     1.47, # Right_Elbow_Yaw
-#     0.0, # Right_Wrist_Pitch
-#     0.0, # Right_Wrist_Yaw
-#     0.0, # Right_Hand_Roll
-
-#     0.0, # Waist
-#     -0.2, # Left_Hip_Pitch
-#     0.0, # Left_Hip_Roll
-#     0.0, # Left_Hip_Yaw
-#     0.4, # Left_Knee_Pitch
-#     -0.25, # Left_Ankle_Pitch
-#     0.0, # Left_Ankle_Roll
-#     -0.2, # Right_Hip_Pitch
-#     0.0, # Right_Hip_Roll
-#     0.0, # Right_Hip_Yaw
-#     0.4, # Right_Knee_Pitch
-#     -0.25, # Right_Ankle_Pitch
-#     0.0, # Right_Ankle_Roll
-#   ]
-
 DEFAULT_MOTOR_ANGLES: [
     0.0, # AAHead_yaw
     0.0, # Head_pitch
@@ -495,40 +366,6 @@ DEFAULT_MOTOR_ANGLES: [
     -0.25, # Right_Ankle_Pitch
     0.0, # Right_Ankle_Roll
   ]
-
-# DEFAULT_MOTOR_ANGLES: [
-#     0.0, # AAHead_yaw
-#     0.0, # Head_pitch
-
-#     0.45, # Left_Shoulder_Pitch
-#     -1.08, # Left_Shoulder_Roll
-#     0.02, # Left_Elbow_Pitch
-#     -1.47, # Left_Elbow_Yaw
-#     0.0, # Left_Wrist_Pitch
-#     0.0, # Left_Wrist_Yaw
-#     0.0, # Left_Hand_Roll
-#     0.45, # Right_Shoulder_Pitch
-#     1.08, # Right_Shoulder_Roll
-#     0.02, # Right_Elbow_Pitch
-#     1.47, # Right_Elbow_Yaw
-#     0.0, # Right_Wrist_Pitch
-#     0.0, # Right_Wrist_Yaw
-#     0.0, # Right_Hand_Roll
-
-#     0.0, # Waist
-#     -0.2, # Left_Hip_Pitch
-#     0.0, # Left_Hip_Roll
-#     0.0, # Left_Hip_Yaw
-#     0.4, # Left_Knee_Pitch
-#     -0.25, # Left_Ankle_Pitch
-#     0.0, # Left_Ankle_Roll
-#     -0.2, # Right_Hip_Pitch
-#     0.0, # Right_Hip_Roll
-#     0.0, # Right_Hip_Yaw
-#     0.4, # Right_Knee_Pitch
-#     -0.25, # Right_Ankle_Pitch
-#     0.0, # Right_Ankle_Roll
-#   ]
 
 motor_pos_lower_limit_list:
   [
@@ -778,8 +615,8 @@ prepare:
       7.5,
       3.,
       5.5,
-      2.0,
-      2.0,
+      1.5,
+      1.5,
     ]
   default_qpos:
     [

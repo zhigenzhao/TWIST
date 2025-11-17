@@ -105,9 +105,16 @@ def play(args):
     load_path, checkpoint = get_load_path(root=load_run, checkpoint=checkpoint)
     load_run = os.path.dirname(load_path)
     cprint(f"Loading model from: {load_path}", "green")
-    ac_state_dict = torch.load(load_path, map_location=device)
-    policy.load_state_dict(ac_state_dict["model_state_dict"], strict=False)
-    policy.load_normalizer(ac_state_dict["normalizer"])
+
+    # Try loading as TorchScript first, then fall back to regular checkpoint
+    try:
+        policy = torch.jit.load(load_path, map_location=device)
+        cprint("Loaded as TorchScript model", "yellow")
+    except (RuntimeError, AttributeError, KeyError):
+        ac_state_dict = torch.load(load_path, map_location=device, weights_only=False)
+        policy.load_state_dict(ac_state_dict["model_state_dict"], strict=False)
+        policy.load_normalizer(ac_state_dict["normalizer"])
+        cprint("Loaded as regular checkpoint", "yellow")
 
     policy = policy.to(device)  # .cpu()
     if not os.path.exists(os.path.join(load_run, "traced")):
