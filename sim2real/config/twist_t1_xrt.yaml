@@ -1,7 +1,12 @@
 ROBOT_TYPE: "t1_29dof" # Robot name, "t1_23dof", "g1_29dof", "go2", "b2", "b2w", "h1", "go2w"
 ROBOT_SCENE: "sim2real/xmls/t1/scene_t1_29dof_sim2sim.xml" # Robot scene, for Sim2Sim
 model_path: "sim2real/models/TWIST_Baseline_1110.onnx"
-MOTION_FILE_PATH: "/home/zzhao300/code/GMR/xrt_data_1113_t1_29dof/recording_20251113_100629.pkl"
+
+# XRT Real-Time Retargeting Config
+XRT_ROBOT_TYPE: "booster_t1_29dof" # GMR robot type for retargeting
+XRT_HUMAN_HEIGHT: null # Human height in meters (null = auto-estimate from first frame)
+XRT_UPDATE_RATE: 100.0 # Hz - rate for fetching and retargeting XRT data
+XRT_FALLBACK_MODE: "stop" # What to do when XRT connection is lost: "stop", "hold", "default"
 
 SDK_TYPE: "booster" # SDK type, "unitree", "booster"
 MOTOR_TYPE: "serial" # Motor type, "serial" or "parallel"
@@ -10,7 +15,7 @@ DOMAIN_ID: 0 # Domain id
 NET: 127.0.0.1
 INTERFACE: "lo" # in simulation, lo0 for mac, lo for linux
 # NET: 192.168.10.10
-# INTERFACE: "enx34298f67081a" # in simulation, lo0 for mac, lo for linux
+# INTERFACE: "enx34298f67081a" # for real hardware
 
 ENABLE_ELASTIC_BAND: True
 SIMULATE_DT: 0.002
@@ -20,7 +25,7 @@ POLICY_ACTION_SCALE: 0.5
 
 # TWIST Policy Config
 TWIST_POLICY_DOFS: 27 # Number of DOFs controlled by the policy
-TWIST_HIST_LEN: 10 # Number of DOFs controlled by the policy
+TWIST_HIST_LEN: 10 # History length for observations
 TWIST_POLICY_INDICES : [
     2, 3, 4, 5, 6, 7, 8,
     9, 10, 11, 12, 13, 14, 15,
